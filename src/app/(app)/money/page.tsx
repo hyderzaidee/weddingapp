@@ -13,14 +13,6 @@ import { formatCurrency, toNumber } from "@/lib/currency";
 import { getSupabase } from "@/lib/supabase";
 import type { Database, MoneyTransaction } from "@/types/database";
 
-const PAYMENT_METHOD_OPTIONS = [
-  { label: "Cash", value: "Cash" },
-  { label: "UPI", value: "UPI" },
-  { label: "Card", value: "Card" },
-  { label: "Bank Transfer", value: "Bank Transfer" },
-  { label: "Other", value: "Other" },
-] as const;
-
 function toTransaction(row: MoneyTransaction): MoneyTransaction {
   return {
     ...row,
@@ -30,38 +22,7 @@ function toTransaction(row: MoneyTransaction): MoneyTransaction {
 
 export default function MoneyPage() {
   const [transactions, setTransactions] = useState<MoneyTransaction[]>([]);
-  const [categoryNames, setCategoryNames] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const loadCategoryNames = useCallback(async () => {
-    try {
-      const { data, error } = await getSupabase()
-        .from("budget_categories")
-        .select("category_name")
-        .order("category_name", { ascending: true });
-
-      if (error) {
-        toast.error(error.message || "Failed to load categories.");
-        setCategoryNames([]);
-        return;
-      }
-
-      const names = Array.from(
-        new Set(
-          (data ?? [])
-            .map((row) => row.category_name?.trim())
-            .filter((name): name is string => Boolean(name))
-        )
-      ).sort((a, b) => a.localeCompare(b));
-
-      setCategoryNames(names);
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to load categories."
-      );
-      setCategoryNames([]);
-    }
-  }, []);
 
   const loadTransactions = useCallback(async () => {
     try {
@@ -94,7 +55,7 @@ export default function MoneyPage() {
     async function initialLoad() {
       setIsLoading(true);
       try {
-        await Promise.all([loadTransactions(), loadCategoryNames()]);
+        await loadTransactions();
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : "Failed to load money data."
@@ -109,7 +70,7 @@ export default function MoneyPage() {
     return () => {
       cancelled = true;
     };
-  }, [loadTransactions, loadCategoryNames]);
+  }, [loadTransactions]);
 
   const totalSpent = useMemo(
     () => transactions.reduce((sum, row) => sum + toNumber(row.amount), 0),
@@ -128,19 +89,6 @@ export default function MoneyPage() {
       .map(([name, amount]) => ({ name, amount }))
       .sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name));
   }, [transactions]);
-
-  const categoryOptions = useMemo(() => {
-    const options = categoryNames.map((name) => ({
-      label: name,
-      value: name,
-    }));
-
-    if (!categoryNames.includes("Other")) {
-      options.push({ label: "Other", value: "Other" });
-    }
-
-    return options;
-  }, [categoryNames]);
 
   const columns: EditableColumn[] = useMemo(
     () => [
@@ -165,33 +113,12 @@ export default function MoneyPage() {
       },
       {
         key: "paid_by",
-        label: "Paid by",
+        label: "From",
         type: "text",
         placeholder: "Name",
       },
-      {
-        key: "category",
-        label: "Category",
-        type: "select",
-        options: categoryOptions,
-        placeholder: "Select category",
-      },
-      {
-        key: "payment_method",
-        label: "Payment method",
-        type: "select",
-        options: [...PAYMENT_METHOD_OPTIONS],
-        placeholder: "Select method",
-      },
-      {
-        key: "notes",
-        label: "Notes",
-        type: "textarea",
-        placeholder: "Notes",
-        className: "min-w-[12rem]",
-      },
     ],
-    [categoryOptions]
+    []
   );
 
   async function handleAdd() {
@@ -285,45 +212,49 @@ export default function MoneyPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <div>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight text-foreground">
+        <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
           Money
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Log payments and see who’s covering what.
+          Log cash collected for the wedding budget.
         </p>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,18rem)_1fr]">
-        <Card className="border-border/80 bg-card/85 shadow-none">
-          <CardHeader className="pb-2">
+      <div className="grid gap-2.5 lg:grid-cols-[minmax(0,18rem)_1fr] lg:gap-3">
+        <Card className="wedding-panel shadow-none">
+          <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Spent So Far
+              Total money collected
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold tracking-tight text-foreground">
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+            <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
               {formatCurrency(totalSpent)}
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-border/80 bg-card/85 shadow-none">
-          <CardHeader className="pb-2">
+        <Card className="wedding-panel shadow-none">
+          <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Who’s paid
+              Who contributed
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
             {paidByBreakdown.length === 0 ? (
-              <p className="text-sm text-muted-foreground/80">No payments logged yet.</p>
+              <p className="text-sm text-muted-foreground/80">
+                No money collected yet.
+              </p>
             ) : (
-              <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-foreground/90">
+              <ul className="grid grid-cols-1 gap-2 text-sm text-foreground/90 sm:flex sm:flex-wrap sm:gap-x-4 sm:gap-y-2">
                 {paidByBreakdown.map(({ name, amount }) => (
-                  <li key={name}>
+                  <li
+                    key={name}
+                    className="flex items-center justify-between gap-3 rounded-xl bg-muted/50 px-3 py-2.5 sm:bg-transparent sm:px-0 sm:py-0"
+                  >
                     <span className="font-medium text-foreground">{name}</span>
-                    {" paid: "}
                     <span className="tabular-nums">
                       {formatCurrency(amount)}
                     </span>

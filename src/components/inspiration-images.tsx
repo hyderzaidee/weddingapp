@@ -88,7 +88,7 @@ export function InspirationImages({
         {urls.map((url) => (
           <div
             key={url}
-            className="group relative size-16 overflow-hidden rounded-lg border border-border bg-muted/60"
+            className="group relative size-20 overflow-hidden rounded-xl border border-border bg-muted/60 sm:size-16 sm:rounded-lg"
           >
             <button
               type="button"
@@ -124,7 +124,7 @@ export function InspirationImages({
             type="button"
             variant="outline"
             size="icon"
-            className="size-16 rounded-lg border-dashed"
+            className="size-20 rounded-xl border-dashed sm:size-16 sm:rounded-lg"
             disabled={isUploading}
             onClick={() => inputRef.current?.click()}
             aria-label="Add inspiration image"
@@ -157,7 +157,7 @@ export function InspirationImages({
           if (!open) setPreviewUrl(null);
         }}
       >
-        <DialogContent className="max-w-2xl p-2 sm:p-4">
+        <DialogContent className="max-w-[calc(100%-1.5rem)] p-2 sm:max-w-2xl sm:p-4">
           <DialogHeader className="sr-only">
             <DialogTitle>Inspiration image</DialogTitle>
           </DialogHeader>

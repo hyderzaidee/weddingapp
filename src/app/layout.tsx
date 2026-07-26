@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Source_Sans_3 } from "next/font/google";
 
 import { Toaster } from "@/components/ui/sonner";
@@ -19,7 +19,13 @@ const cormorant = Cormorant_Garamond({
 export const metadata: Metadata = {
   title: "Wedding Prep",
   description:
-    "Desi shaadi planning — tasks, budget, money, outfits, and gifts.",
+    "Desi shaadi planning — tasks, budget, money, and events.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -28,9 +34,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${sourceSans.variable} ${cormorant.variable} font-sans antialiased`}
+        suppressHydrationWarning
       >
         {children}
         <Toaster />
