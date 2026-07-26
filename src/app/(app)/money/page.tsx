@@ -29,8 +29,7 @@ export default function MoneyPage() {
       const { data, error } = await getSupabase()
         .from("money_transactions")
         .select("*")
-        .order("transaction_date", { ascending: false })
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: true });
 
       if (error) {
         toast.error(error.message || "Failed to load transactions.");
@@ -92,11 +91,6 @@ export default function MoneyPage() {
 
   const columns: EditableColumn[] = useMemo(
     () => [
-      {
-        key: "transaction_date",
-        label: "Date",
-        type: "date",
-      },
       {
         key: "description",
         label: "Description",
@@ -168,19 +162,11 @@ export default function MoneyPage() {
         return;
       }
 
-      setTransactions((current) => {
-        const updated = current.map((row) =>
+      setTransactions((current) =>
+        current.map((row) =>
           row.id === rowId ? { ...row, [columnKey]: nextValue } : row
-        );
-
-        return [...updated].sort((a, b) => {
-          const dateCompare = (b.transaction_date ?? "").localeCompare(
-            a.transaction_date ?? ""
-          );
-          if (dateCompare !== 0) return dateCompare;
-          return (b.created_at ?? "").localeCompare(a.created_at ?? "");
-        });
-      });
+        )
+      );
       toast.success("Saved.");
     } catch (error) {
       toast.error(

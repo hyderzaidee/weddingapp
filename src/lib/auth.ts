@@ -1,5 +1,5 @@
 export const AUTH_COOKIE_NAME = "wedding-app-auth";
-export const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
+export const AUTH_COOKIE_MAX_AGE = 60 * 60 * 6; // 6 hours
 const AUTH_PAYLOAD = "wedding-app-authenticated";
 
 function toHex(buffer: ArrayBuffer): string {
