@@ -5,9 +5,11 @@ import {
   getAppPasscode,
   verifyAuthToken,
 } from "@/lib/auth";
+import { getRequestOrigin } from "@/lib/request-origin";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const origin = getRequestOrigin(request);
 
   const isLoginPage = pathname === "/login";
   const isLoginApi = pathname === "/api/login";
@@ -22,14 +24,13 @@ export async function middleware(request: NextRequest) {
 
   if (isLoginPage) {
     if (isAuthenticated) {
-      return NextResponse.redirect(new URL("/", request.url));
+      return NextResponse.redirect(new URL("/", origin));
     }
     return NextResponse.next();
   }
 
   if (!isAuthenticated) {
-    const loginUrl = new URL("/login", request.url);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL("/login", origin));
   }
 
   return NextResponse.next();
