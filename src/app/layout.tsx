@@ -20,12 +20,21 @@ export const metadata: Metadata = {
   title: "Wedding Prep",
   description:
     "Desi shaadi planning — tasks, budget, money, and events.",
+  appleWebApp: {
+    capable: true,
+    title: "Wedding Prep",
+    statusBarStyle: "default",
+  },
+  icons: {
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#7A1F2B",
 };
 
 export default function RootLayout({
