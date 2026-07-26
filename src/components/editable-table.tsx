@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { LoaderCircle, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, LoaderCircle, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -53,6 +53,8 @@ export type EditableColumn = {
   /** Defaults to true. Set false for calculated / display-only columns. */
   editable?: boolean;
   renderDisplay?: (value: EditableRow[string], row: EditableRow) => ReactNode;
+  /** Optional classes for select trigger / items based on current value. */
+  selectClassName?: (value: string) => string | undefined;
   /** Fully custom cell (e.g. image gallery). Skips inline editing. */
   customCell?: (ctx: {
     row: EditableRow;
@@ -87,6 +89,8 @@ type EditableTableProps = {
   emptyMessage?: string;
   addLabel?: string;
   className?: string;
+  /** Mobile-only: cards start collapsed and can expand. */
+  collapsibleMobile?: boolean;
 };
 
 function toInputString(value: EditableRow[string]): string {
@@ -107,6 +111,20 @@ function parseCellValue(
   return raw;
 }
 
+function formatDateDisplay(value: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (!match) return value;
+
+  const date = new Date(`${match[1]}-${match[2]}-${match[3]}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 function displayValue(
   column: EditableColumn,
   value: EditableRow[string]
@@ -118,6 +136,10 @@ function displayValue(
       (option) => option.value === String(value)
     );
     return match?.label ?? String(value);
+  }
+
+  if (column.type === "date") {
+    return formatDateDisplay(String(value));
   }
 
   return String(value);
@@ -138,7 +160,9 @@ function renderCellContent(
   return (
     <span
       className={cn(
-        "whitespace-pre-wrap break-words",
+        column.type === "date"
+          ? "whitespace-nowrap"
+          : "whitespace-pre-wrap break-words",
         (value == null || value === "") && "text-muted-foreground/80"
       )}
     >
@@ -168,6 +192,7 @@ export function EditableTable({
   emptyMessage = "No rows yet. Add one to get started.",
   addLabel = "Add row",
   className,
+  collapsibleMobile = false,
 }: EditableTableProps) {
   const [editing, setEditing] = useState<EditingCell | null>(null);
   const [draft, setDraft] = useState("");
@@ -244,6 +269,7 @@ export function EditableTable({
                 onCommit={commitEdit}
                 onUpdate={onUpdate}
                 onRequestDelete={setDeleteTargetId}
+                collapsible={collapsibleMobile}
               />
             ))}
           </div>
@@ -280,6 +306,7 @@ export function EditableTable({
                           className={cn(
                             "align-top",
                             column.type === "textarea" && "min-w-[12rem]",
+                            column.type === "date" && "min-w-[11rem] whitespace-nowrap",
                             column.className
                           )}
                         >
@@ -347,7 +374,7 @@ export function EditableTable({
         variant="outline"
         onClick={handleAdd}
         disabled={isLoading || isAdding}
-        className="gap-2"
+        className="sticky bottom-3 z-20 h-11 w-full gap-2 border-border/80 bg-card/95 shadow-md backdrop-blur-sm md:static md:w-auto md:shadow-none"
       >
         {isAdding ? (
           <LoaderCircle className="size-4 animate-spin" />
@@ -363,17 +390,18 @@ export function EditableTable({
           if (!open && !isDeleting) setDeleteTargetId(null);
         }}
       >
-        <DialogContent>
+        <DialogContent className="max-w-[calc(100%-1.5rem)] rounded-2xl sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Delete this row?</DialogTitle>
             <DialogDescription>
               This can&apos;t be undone. The row will be removed permanently.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button
               type="button"
               variant="outline"
+              className="h-11 w-full sm:w-auto"
               onClick={() => setDeleteTargetId(null)}
               disabled={isDeleting}
             >
@@ -382,6 +410,7 @@ export function EditableTable({
             <Button
               type="button"
               variant="destructive"
+              className="h-11 w-full sm:w-auto"
               onClick={handleConfirmDelete}
               disabled={isDeleting}
             >
@@ -403,7 +432,7 @@ export function EditableTable({
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-xl border border-dashed border-border bg-card/60 px-6 py-12 text-center">
+    <div className="rounded-2xl border border-dashed border-border bg-card/60 px-4 py-10 text-center sm:px-6 sm:py-12">
       <p className="text-sm text-muted-foreground">{message}</p>
     </div>
   );
@@ -481,7 +510,49 @@ type MobileRowCardProps = {
     newValue: EditableCellValue
   ) => void | Promise<void>;
   onRequestDelete: (rowId: string) => void;
+  collapsible?: boolean;
 };
+
+function isCompactMobileField(column: EditableColumn) {
+  return (
+    !column.customCell &&
+    (column.type === "select" ||
+      column.type === "date" ||
+      column.type === "number")
+  );
+}
+
+function getMobileTitleColumn(columns: EditableColumn[]) {
+  const preferredKeys = [
+    "title",
+    "person_name",
+    "category",
+    "event_name",
+    "description",
+    "item",
+  ];
+
+  for (const key of preferredKeys) {
+    const match = columns.find(
+      (column) => column.key === key && !column.customCell
+    );
+    if (match) return match;
+  }
+
+  return columns.find((column) => column.type === "text" && !column.customCell);
+}
+
+function getMobileSummaryColumns(
+  columns: EditableColumn[],
+  titleKey: string | undefined
+) {
+  const preferredKeys = ["status", "category", "cost", "assigned_to"];
+  return preferredKeys
+    .map((key) => columns.find((column) => column.key === key))
+    .filter((column): column is EditableColumn =>
+      Boolean(column && column.key !== titleKey)
+    );
+}
 
 function MobileRowCard({
   row,
@@ -494,18 +565,116 @@ function MobileRowCard({
   onCommit,
   onUpdate,
   onRequestDelete,
+  collapsible = false,
 }: MobileRowCardProps) {
+  const [expanded, setExpanded] = useState(!collapsible);
+  const titleColumn = getMobileTitleColumn(columns);
+  const bodyColumns = titleColumn
+    ? columns.filter((column) => column.key !== titleColumn.key)
+    : columns;
+  const summaryColumns = getMobileSummaryColumns(columns, titleColumn?.key);
+
+  const titleEditing =
+    titleColumn != null &&
+    editing?.rowId === row.id &&
+    editing.columnKey === titleColumn.key;
+
+  const isExpanded = !collapsible || expanded;
+
   return (
-    <div className="rounded-xl border border-border/80 bg-card/85 p-4 shadow-sm">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/80">
-          Row
-        </p>
+    <div className="wedding-panel overflow-hidden rounded-2xl p-3.5 shadow-sm sm:p-4">
+      <div className={cn("flex items-start gap-2", isExpanded && "mb-3")}>
+        {collapsible ? (
+          <button
+            type="button"
+            onClick={() => setExpanded((current) => !current)}
+            className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-expanded={isExpanded}
+            aria-label={isExpanded ? "Collapse row" : "Expand row"}
+          >
+            <ChevronDown
+              className={cn(
+                "size-5 transition-transform",
+                isExpanded && "rotate-180"
+              )}
+            />
+          </button>
+        ) : null}
+
+        <div className="min-w-0 flex-1">
+          {titleColumn ? (
+            titleColumn.customCell ? (
+              titleColumn.customCell({
+                row,
+                value: row[titleColumn.key],
+                onUpdate: (newValue) =>
+                  onUpdate(row.id, titleColumn.key, newValue),
+              })
+            ) : titleColumn.type === "select" ? (
+              <SelectCell
+                column={titleColumn}
+                value={row[titleColumn.key]}
+                onUpdate={(newValue) =>
+                  onUpdate(row.id, titleColumn.key, newValue)
+                }
+              />
+            ) : titleEditing ? (
+              <CellEditor
+                column={titleColumn}
+                value={draft}
+                onChange={onDraftChange}
+                onCommit={(raw) => onCommit(row, titleColumn, raw)}
+                onCancel={onStopEdit}
+              />
+            ) : titleColumn.editable === false ? (
+              <p className="truncate text-base font-semibold text-foreground">
+                {displayValue(titleColumn, row[titleColumn.key])}
+              </p>
+            ) : collapsible && !isExpanded ? (
+              <button
+                type="button"
+                onClick={() => setExpanded(true)}
+                className="block w-full rounded-lg px-1 py-1 text-left text-base font-semibold text-foreground transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {displayValue(titleColumn, row[titleColumn.key])}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onStartEdit(row, titleColumn)}
+                className="block w-full rounded-lg px-1 py-1 text-left text-base font-semibold text-foreground transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {displayValue(titleColumn, row[titleColumn.key])}
+              </button>
+            )
+          ) : (
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/80">
+              Item
+            </p>
+          )}
+
+          {collapsible && !isExpanded && summaryColumns.length > 0 ? (
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 px-1">
+              {summaryColumns.map((column) => (
+                <div
+                  key={column.key}
+                  className="inline-flex max-w-full items-center text-xs text-muted-foreground"
+                >
+                  {renderCellContent(column, row[column.key], row)}
+                </div>
+              ))}
+            </div>
+          ) : titleColumn && !(collapsible && !isExpanded) ? (
+            <p className="mt-0.5 px-1 text-[11px] text-muted-foreground">
+              {titleColumn.label}
+            </p>
+          ) : null}
+        </div>
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="size-8 shrink-0 text-muted-foreground/80 hover:text-red-600"
+          className="size-11 shrink-0 text-muted-foreground/80 hover:text-red-600"
           onClick={() => onRequestDelete(row.id)}
           aria-label="Delete row"
         >
@@ -513,56 +682,62 @@ function MobileRowCard({
         </Button>
       </div>
 
-      <div className="space-y-3">
-        {columns.map((column) => {
-          const isEditing =
-            editing?.rowId === row.id && editing.columnKey === column.key;
+      {isExpanded ? (
+        <div className="grid grid-cols-2 gap-x-3 gap-y-3">
+          {bodyColumns.map((column) => {
+            const isEditing =
+              editing?.rowId === row.id && editing.columnKey === column.key;
+            const spansFull = !isCompactMobileField(column);
 
-          return (
-            <div key={column.key} className="space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground">
-                {column.label}
-              </p>
-              {column.customCell ? (
-                column.customCell({
-                  row,
-                  value: row[column.key],
-                  onUpdate: (newValue) =>
-                    onUpdate(row.id, column.key, newValue),
-                })
-              ) : column.type === "select" ? (
-                <SelectCell
-                  column={column}
-                  value={row[column.key]}
-                  onUpdate={(newValue) =>
-                    onUpdate(row.id, column.key, newValue)
-                  }
-                />
-              ) : isEditing ? (
-                <CellEditor
-                  column={column}
-                  value={draft}
-                  onChange={onDraftChange}
-                  onCommit={(raw) => onCommit(row, column, raw)}
-                  onCancel={onStopEdit}
-                />
-              ) : column.editable === false ? (
-                <div className="rounded-lg bg-muted/60 px-3 py-2 text-sm text-foreground/90">
-                  {renderCellContent(column, row[column.key], row)}
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onStartEdit(row, column)}
-                  className="block w-full rounded-lg border border-transparent bg-muted/60 px-3 py-2 text-left text-sm text-foreground/90 transition-colors hover:border-border hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  {renderCellContent(column, row[column.key], row)}
-                </button>
-              )}
-            </div>
-          );
-        })}
-      </div>
+            return (
+              <div
+                key={column.key}
+                className={cn("space-y-1.5", spansFull && "col-span-2")}
+              >
+                <p className="text-xs font-medium text-muted-foreground">
+                  {column.label}
+                </p>
+                {column.customCell ? (
+                  column.customCell({
+                    row,
+                    value: row[column.key],
+                    onUpdate: (newValue) =>
+                      onUpdate(row.id, column.key, newValue),
+                  })
+                ) : column.type === "select" ? (
+                  <SelectCell
+                    column={column}
+                    value={row[column.key]}
+                    onUpdate={(newValue) =>
+                      onUpdate(row.id, column.key, newValue)
+                    }
+                  />
+                ) : isEditing ? (
+                  <CellEditor
+                    column={column}
+                    value={draft}
+                    onChange={onDraftChange}
+                    onCommit={(raw) => onCommit(row, column, raw)}
+                    onCancel={onStopEdit}
+                  />
+                ) : column.editable === false ? (
+                  <div className="min-h-11 rounded-xl bg-muted/60 px-3 py-2.5 text-sm text-foreground/90">
+                    {renderCellContent(column, row[column.key], row)}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onStartEdit(row, column)}
+                    className="block min-h-11 w-full rounded-xl border border-transparent bg-muted/60 px-3 py-2.5 text-left text-sm text-foreground/90 transition-colors hover:border-border hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {renderCellContent(column, row[column.key], row)}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -578,6 +753,9 @@ function SelectCell({ column, value, onUpdate }: SelectCellProps) {
   const options = column.options ?? [];
   const hasCurrentOption =
     !stringValue || options.some((option) => option.value === stringValue);
+  const valueClassName = stringValue
+    ? column.selectClassName?.(stringValue)
+    : undefined;
 
   return (
     <Select
@@ -588,7 +766,12 @@ function SelectCell({ column, value, onUpdate }: SelectCellProps) {
         }
       }}
     >
-      <SelectTrigger className="h-9 w-full min-w-[8rem]">
+      <SelectTrigger
+        className={cn(
+          "h-11 w-full min-w-0 md:h-9 md:min-w-[8rem]",
+          valueClassName
+        )}
+      >
         <SelectValue placeholder={column.placeholder ?? "Select…"} />
       </SelectTrigger>
       <SelectContent>
@@ -596,7 +779,11 @@ function SelectCell({ column, value, onUpdate }: SelectCellProps) {
           <SelectItem value={stringValue}>{stringValue}</SelectItem>
         ) : null}
         {options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
+          <SelectItem
+            key={option.value}
+            value={option.value}
+            className={column.selectClassName?.(option.value)}
+          >
             {option.label}
           </SelectItem>
         ))}
@@ -677,7 +864,7 @@ function CellEditor({
       }
       value={value}
       placeholder={column.placeholder}
-      className="h-9"
+      className={cn("h-11 md:h-9", column.type === "date" && "min-w-0 md:min-w-[11rem]")}
       onChange={(event) => onChange(event.target.value)}
       onBlur={handleBlurCommit}
       onKeyDown={(event) => {

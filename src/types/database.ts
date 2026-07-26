@@ -1,5 +1,9 @@
 export type TaskStatus = "todo" | "in_progress" | "done";
 export type TaskPriority = "low" | "medium" | "high";
+export type TaskCategory =
+  | "wedding_preparation"
+  | "hiras_stuff"
+  | "ahmed_and_family";
 export type OutfitStatus = "idea" | "ordered" | "fitting" | "ready";
 export type GiftStatus =
   | "idea"
@@ -18,6 +22,8 @@ export type Task = {
   status: TaskStatus;
   priority: TaskPriority;
   notes: string | null;
+  cost: number | null;
+  category: TaskCategory;
   created_at: string;
   updated_at: string;
 };
@@ -27,6 +33,15 @@ export type BudgetCategory = {
   category_name: string;
   estimated_amount: number;
   actual_amount: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type BudgetContribution = {
+  id: string;
+  person_name: string;
+  amount: number;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -94,6 +109,8 @@ type Tables = {
       status?: TaskStatus;
       priority?: TaskPriority;
       notes?: string | null;
+      cost?: number | null;
+      category?: TaskCategory;
       created_at?: string;
       updated_at?: string;
     };
@@ -107,6 +124,8 @@ type Tables = {
       status?: TaskStatus;
       priority?: TaskPriority;
       notes?: string | null;
+      cost?: number | null;
+      category?: TaskCategory;
       created_at?: string;
       updated_at?: string;
     };
@@ -128,6 +147,26 @@ type Tables = {
       category_name?: string;
       estimated_amount?: number;
       actual_amount?: number;
+      notes?: string | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Relationships: [];
+  };
+  budget_contributions: {
+    Row: BudgetContribution;
+    Insert: {
+      id?: string;
+      person_name: string;
+      amount?: number;
+      notes?: string | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Update: {
+      id?: string;
+      person_name?: string;
+      amount?: number;
       notes?: string | null;
       created_at?: string;
       updated_at?: string;

@@ -31,6 +31,15 @@ create table public.tasks (
   priority text not null default 'medium'
     check (priority in ('low', 'medium', 'high')),
   notes text,
+  cost numeric,
+  category text not null default 'wedding_preparation'
+    check (
+      category in (
+        'wedding_preparation',
+        'hiras_stuff',
+        'ahmed_and_family'
+      )
+    ),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -55,6 +64,23 @@ create table public.budget_categories (
 
 create trigger budget_categories_set_updated_at
 before update on public.budget_categories
+for each row
+execute function public.set_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- budget_contributions
+-- ---------------------------------------------------------------------------
+create table public.budget_contributions (
+  id uuid primary key default gen_random_uuid(),
+  person_name text not null,
+  amount numeric not null default 0,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create trigger budget_contributions_set_updated_at
+before update on public.budget_contributions
 for each row
 execute function public.set_updated_at();
 
@@ -136,6 +162,7 @@ execute function public.set_updated_at();
 -- ---------------------------------------------------------------------------
 alter table public.tasks enable row level security;
 alter table public.budget_categories enable row level security;
+alter table public.budget_contributions enable row level security;
 alter table public.money_transactions enable row level security;
 alter table public.outfits enable row level security;
 alter table public.events enable row level security;
@@ -149,6 +176,12 @@ create policy "Allow all on tasks"
 
 create policy "Allow all on budget_categories"
   on public.budget_categories
+  for all
+  using (true)
+  with check (true);
+
+create policy "Allow all on budget_contributions"
+  on public.budget_contributions
   for all
   using (true)
   with check (true);

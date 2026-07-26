@@ -4,14 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  CalendarDays,
   CheckSquare,
-  Gift,
   Heart,
   LayoutDashboard,
   LogOut,
   Menu,
   PiggyBank,
-  Shirt,
   Wallet,
 } from "lucide-react";
 
@@ -27,15 +26,19 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/", label: "Home", icon: LayoutDashboard },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
-  { href: "/budget", label: "Budget", icon: PiggyBank },
   { href: "/money", label: "Money", icon: Wallet },
-  { href: "/clothes", label: "Clothes & Events", icon: Shirt },
-  { href: "/gifts", label: "Gifts", icon: Gift },
+  { href: "/budget", label: "Budget", icon: PiggyBank },
+  { href: "/events", label: "Events", icon: CalendarDays },
 ] as const;
 
 function isActivePath(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function currentPageLabel(pathname: string) {
+  const match = navItems.find((item) => isActivePath(pathname, item.href));
+  return match?.label ?? "Wedding Prep";
 }
 
 function Brand({ onNavigate }: { onNavigate?: () => void }) {
@@ -45,7 +48,7 @@ function Brand({ onNavigate }: { onNavigate?: () => void }) {
       onClick={onNavigate}
       className="group flex items-center gap-2.5"
     >
-      <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition-transform group-hover:scale-105">
+      <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition-transform group-hover:scale-105 md:size-9">
         <Heart className="size-4 fill-current" />
       </span>
       <div className="min-w-0">
@@ -66,7 +69,7 @@ function NavLinks({
   onNavigate?: () => void;
 }) {
   return (
-    <nav className="flex flex-1 flex-col gap-1">
+    <nav className="flex flex-1 flex-col gap-1.5">
       {navItems.map(({ href, label, icon: Icon }) => {
         const isActive = isActivePath(pathname, href);
 
@@ -74,10 +77,11 @@ function NavLinks({
           <Link
             key={href}
             href={href}
+            prefetch
             onClick={onNavigate}
             className={cn(
-              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-                isActive
+              "flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+              isActive
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             )}
@@ -98,12 +102,12 @@ function NavLinks({
 
 function SidebarFooter({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <div className="mt-auto space-y-3 px-1">
+    <div className="mt-auto space-y-3 px-1 pb-[env(safe-area-inset-bottom)]">
       <form action="/api/logout" method="POST">
         <Button
           type="submit"
           variant="ghost"
-          className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
+          className="h-11 w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
           onClick={onNavigate}
         >
           <LogOut className="size-4" />
@@ -142,32 +146,35 @@ export function AppSidebar() {
 
   return (
     <>
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 border-r border-sidebar-border bg-sidebar backdrop-blur-md md:block">
+      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 border-r border-sidebar-border bg-sidebar/80 backdrop-blur-md md:block">
         <SidebarPanel pathname={pathname} />
       </aside>
 
-      <div className="sticky top-0 z-40 flex items-center gap-3 border-b border-border/80 bg-card/90 px-4 py-3 backdrop-blur-md md:hidden">
+      <div className="sticky top-0 z-40 flex items-center gap-3 border-b border-border/80 bg-card/80 px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur-md md:hidden">
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="size-9 shrink-0"
+          className="size-11 shrink-0"
           onClick={() => setMobileOpen(true)}
           aria-label="Open menu"
         >
           <Menu className="size-5" />
         </Button>
-        <Link href="/" className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="truncate font-heading text-base font-semibold tracking-tight text-foreground">
+            {currentPageLabel(pathname)}
+          </p>
+          <p className="truncate text-[11px] text-muted-foreground">
             Wedding Prep
           </p>
-        </Link>
+        </div>
       </div>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent
           side="left"
-          className="w-[min(100%,18rem)] border-border bg-card p-0"
+          className="w-[min(100%,20rem)] border-border bg-card p-0"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Navigation</SheetTitle>

@@ -8,11 +8,11 @@ type PageHeaderProps = {
 export function PageHeader({ title, description }: PageHeaderProps) {
   return (
     <Card className="wedding-panel shadow-none">
-      <CardHeader className="gap-1.5">
-        <CardTitle className="font-heading text-2xl font-semibold tracking-tight text-foreground">
+      <CardHeader className="gap-1.5 p-4 sm:p-6">
+        <CardTitle className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
           {title}
         </CardTitle>
-        <CardDescription className="text-base text-muted-foreground">
+        <CardDescription className="text-sm text-muted-foreground sm:text-base">
           {description}
         </CardDescription>
       </CardHeader>

@@ -6,9 +6,7 @@ import {
   ArrowRight,
   CalendarDays,
   CheckSquare,
-  Gift,
   PiggyBank,
-  Shirt,
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -26,28 +24,22 @@ const modules = [
     icon: CheckSquare,
   },
   {
-    href: "/budget",
-    label: "Budget",
-    description: "Estimated vs actual spend",
-    icon: PiggyBank,
-  },
-  {
     href: "/money",
     label: "Money",
     description: "Payments and who’s covering what",
     icon: Wallet,
   },
   {
-    href: "/clothes",
-    label: "Clothes & Events",
-    description: "Outfits and celebration details",
-    icon: Shirt,
+    href: "/budget",
+    label: "Budget",
+    description: "Estimated vs actual spend",
+    icon: PiggyBank,
   },
   {
-    href: "/gifts",
-    label: "Gifts",
-    description: "Gift ideas, status, and inspo",
-    icon: Gift,
+    href: "/events",
+    label: "Events",
+    description: "Celebration dates, venues, and guests",
+    icon: CalendarDays,
   },
 ] as const;
 
@@ -61,15 +53,20 @@ type DashboardStats = {
 
 function daysUntil(dateStr: string): number {
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const target = new Date(`${dateStr}T00:00:00`);
-  return Math.round((target.getTime() - today.getTime()) / 86_400_000);
+  const todayUtc = Date.UTC(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  );
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const targetUtc = Date.UTC(year, month - 1, day);
+  return Math.round((targetUtc - todayUtc) / 86_400_000);
 }
 
 function formatEventDate(dateStr: string): string {
-  return new Date(`${dateStr}T00:00:00`).toLocaleDateString(undefined, {
-    month: "short",
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString("en-GB", {
     day: "numeric",
+    month: "short",
     year: "numeric",
   });
 }
@@ -87,25 +84,30 @@ export default function HomePage() {
       try {
         const supabase = getSupabase();
 
-        const [tasksResult, budgetResult, eventsResult] = await Promise.all([
-          supabase.from("tasks").select("status"),
-          supabase
-            .from("budget_categories")
-            .select("estimated_amount, actual_amount"),
-          supabase
-            .from("events")
-            .select("event_date")
-            .not("event_date", "is", null)
-            .order("event_date", { ascending: true })
-            .limit(1),
-        ]);
+        const [tasksResult, collectionsResult, taskCostsResult, eventsResult] =
+          await Promise.all([
+            supabase.from("tasks").select("status"),
+            supabase.from("money_transactions").select("amount"),
+            supabase.from("tasks").select("cost").not("cost", "is", null),
+            supabase
+              .from("events")
+              .select("event_date")
+              .not("event_date", "is", null)
+              .order("event_date", { ascending: true })
+              .limit(1),
+          ]);
 
         if (tasksResult.error) {
           throw new Error(tasksResult.error.message || "Failed to load tasks.");
         }
-        if (budgetResult.error) {
+        if (collectionsResult.error) {
           throw new Error(
-            budgetResult.error.message || "Failed to load budget."
+            collectionsResult.error.message || "Failed to load budget."
+          );
+        }
+        if (taskCostsResult.error) {
+          throw new Error(
+            taskCostsResult.error.message || "Failed to load task costs."
           );
         }
         if (eventsResult.error) {
@@ -115,19 +117,20 @@ export default function HomePage() {
         }
 
         const tasks = tasksResult.data ?? [];
-        const budget = budgetResult.data ?? [];
+        const collections = collectionsResult.data ?? [];
+        const taskCosts = taskCostsResult.data ?? [];
         const earliestEventDate = eventsResult.data?.[0]?.event_date ?? null;
 
         if (!cancelled) {
           setStats({
             tasksDone: tasks.filter((task) => task.status === "done").length,
             tasksTotal: tasks.length,
-            budgetActual: budget.reduce(
-              (sum, row) => sum + toNumber(row.actual_amount),
+            budgetActual: taskCosts.reduce(
+              (sum, row) => sum + toNumber(row.cost),
               0
             ),
-            budgetEstimated: budget.reduce(
-              (sum, row) => sum + toNumber(row.estimated_amount),
+            budgetEstimated: collections.reduce(
+              (sum, row) => sum + toNumber(row.amount),
               0
             ),
             earliestEventDate,
@@ -166,9 +169,9 @@ export default function HomePage() {
       : null;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+        <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-3xl">
           Shaadi dashboard
         </h1>
         <p className="mt-1 text-sm text-muted-foreground sm:text-base">
@@ -176,15 +179,15 @@ export default function HomePage() {
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
         <Card className="wedding-panel shadow-none">
-          <CardHeader className="pb-2">
+          <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
             <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <CheckSquare className="size-4 text-maroon" />
               Tasks done
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
             {isLoading ? (
               <div className="h-8 w-24 animate-pulse rounded bg-muted" />
             ) : (
@@ -203,13 +206,13 @@ export default function HomePage() {
         </Card>
 
         <Card className="wedding-panel shadow-none">
-          <CardHeader className="pb-2">
+          <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
             <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <PiggyBank className="size-4 text-maroon" />
               Budget spent
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
             {isLoading ? (
               <div className="h-8 w-32 animate-pulse rounded bg-muted" />
             ) : (
@@ -218,7 +221,7 @@ export default function HomePage() {
                   {formatCurrency(stats?.budgetActual ?? 0)}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  of {formatCurrency(stats?.budgetEstimated ?? 0)} estimated
+                  of {formatCurrency(stats?.budgetEstimated ?? 0)} contributed
                 </p>
               </>
             )}
@@ -226,13 +229,13 @@ export default function HomePage() {
         </Card>
 
         <Card className="wedding-panel shadow-none">
-          <CardHeader className="pb-2">
+          <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
             <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <CalendarDays className="size-4 text-maroon" />
               Days remaining
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
             {isLoading ? (
               <div className="h-8 w-20 animate-pulse rounded bg-muted" />
             ) : daysRemaining == null ? (
@@ -275,12 +278,12 @@ export default function HomePage() {
         <h2 className="font-heading text-lg font-semibold tracking-tight text-foreground">
           Jump in
         </h2>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
           {modules.map(({ href, label, description, icon: Icon }) => (
             <Link
               key={href}
               href={href}
-              className="group flex items-start gap-3 rounded-xl border border-border/80 bg-card/85 p-4 transition-colors hover:border-gold/50 hover:bg-card"
+              className="group flex min-h-16 items-start gap-3 rounded-2xl border border-border/80 bg-card/85 p-3.5 transition-colors active:bg-card hover:border-gold/50 hover:bg-card sm:p-4"
             >
               <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-maroon transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                 <Icon className="size-4" />

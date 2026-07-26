@@ -17,12 +17,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatCurrency, toNumber } from "@/lib/currency";
 import { getSupabase } from "@/lib/supabase";
 import {
   buildEventSelectOptions,
   ensureDefaultEvents,
 } from "@/lib/event-options";
-import type { Database, Task, TaskPriority, TaskStatus } from "@/types/database";
+import type {
+  Database,
+  Task,
+  TaskCategory,
+  TaskStatus,
+} from "@/types/database";
 
 const STATUS_OPTIONS = [
   { label: "To do", value: "todo" },
@@ -30,24 +36,17 @@ const STATUS_OPTIONS = [
   { label: "Done", value: "done" },
 ] as const;
 
-const PRIORITY_OPTIONS = [
-  { label: "Low", value: "low" },
-  { label: "Medium", value: "medium" },
-  { label: "High", value: "high" },
+const CATEGORY_OPTIONS = [
+  { label: "Wedding Preparation", value: "wedding_preparation" },
+  { label: "Hira's Stuff", value: "hiras_stuff" },
+  { label: "Ahmed and Family", value: "ahmed_and_family" },
 ] as const;
 
 const STATUS_BADGE_CLASS: Record<TaskStatus, string> = {
-  todo: "border-transparent bg-muted text-muted-foreground hover:bg-muted",
+  todo: "border-transparent bg-red-100 text-red-800 hover:bg-red-100 focus:bg-red-100 data-[highlighted]:bg-red-100 data-[highlighted]:text-red-800",
   in_progress:
-    "border-transparent bg-amber-100 text-amber-900 hover:bg-amber-100",
-  done: "border-transparent bg-emerald-100 text-emerald-800 hover:bg-emerald-100",
-};
-
-const PRIORITY_BADGE_CLASS: Record<TaskPriority, string> = {
-  low: "border-transparent bg-muted text-muted-foreground hover:bg-muted",
-  medium:
-    "border-transparent bg-amber-100 text-amber-800 hover:bg-amber-100",
-  high: "border-transparent bg-red-100 text-red-800 hover:bg-red-100",
+    "border-transparent bg-yellow-100 text-yellow-800 hover:bg-yellow-100 focus:bg-yellow-100 data-[highlighted]:bg-yellow-100 data-[highlighted]:text-yellow-800",
+  done: "border-transparent bg-green-100 text-green-800 hover:bg-green-100 focus:bg-green-100 data-[highlighted]:bg-green-100 data-[highlighted]:text-green-800",
 };
 
 const STATUS_LABEL: Record<TaskStatus, string> = {
@@ -56,10 +55,10 @@ const STATUS_LABEL: Record<TaskStatus, string> = {
   done: "Done",
 };
 
-const PRIORITY_LABEL: Record<TaskPriority, string> = {
-  low: "Low",
-  medium: "Medium",
-  high: "High",
+const CATEGORY_LABEL: Record<TaskCategory, string> = {
+  wedding_preparation: "Wedding Preparation",
+  hiras_stuff: "Hira's Stuff",
+  ahmed_and_family: "Ahmed and Family",
 };
 
 const ALL_FILTER = "__all__";
@@ -68,8 +67,22 @@ function isTaskStatus(value: string): value is TaskStatus {
   return value === "todo" || value === "in_progress" || value === "done";
 }
 
-function isTaskPriority(value: string): value is TaskPriority {
-  return value === "low" || value === "medium" || value === "high";
+function isTaskCategory(value: string): value is TaskCategory {
+  return (
+    value === "wedding_preparation" ||
+    value === "hiras_stuff" ||
+    value === "ahmed_and_family"
+  );
+}
+
+function toTask(row: Task): Task {
+  return {
+    ...row,
+    cost: row.cost == null ? null : toNumber(row.cost),
+    category: isTaskCategory(row.category)
+      ? row.category
+      : "wedding_preparation",
+  };
 }
 
 export default function TasksPage() {
@@ -79,6 +92,7 @@ export default function TasksPage() {
   const [assignedFilter, setAssignedFilter] = useState(ALL_FILTER);
   const [statusFilter, setStatusFilter] = useState(ALL_FILTER);
   const [eventFilter, setEventFilter] = useState(ALL_FILTER);
+  const [categoryFilter, setCategoryFilter] = useState(ALL_FILTER);
 
   const loadEventNames = useCallback(async () => {
     try {
@@ -112,7 +126,7 @@ export default function TasksPage() {
       const { data, error } = await getSupabase()
         .from("tasks")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: true });
 
       if (error) {
         toast.error(error.message || "Failed to load tasks.");
@@ -120,7 +134,7 @@ export default function TasksPage() {
         return;
       }
 
-      setTasks(data ?? []);
+      setTasks((data ?? []).map(toTask));
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to load tasks."
@@ -179,9 +193,12 @@ export default function TasksPage() {
       if (eventFilter !== ALL_FILTER && task.event_name !== eventFilter) {
         return false;
       }
+      if (categoryFilter !== ALL_FILTER && task.category !== categoryFilter) {
+        return false;
+      }
       return true;
     });
-  }, [tasks, assignedFilter, statusFilter, eventFilter]);
+  }, [tasks, assignedFilter, statusFilter, eventFilter, categoryFilter]);
 
   const completedCount = filteredTasks.filter(
     (task) => task.status === "done"
@@ -197,6 +214,19 @@ export default function TasksPage() {
         className: "min-w-[10rem]",
       },
       {
+        key: "category",
+        label: "Category",
+        type: "select",
+        options: [...CATEGORY_OPTIONS],
+        placeholder: "Select category",
+        className: "min-w-[11rem]",
+        renderDisplay: (value) => {
+          const category = String(value);
+          if (!isTaskCategory(category)) return String(value);
+          return CATEGORY_LABEL[category];
+        },
+      },
+      {
         key: "assigned_to",
         label: "Assigned to",
         type: "text",
@@ -210,15 +240,22 @@ export default function TasksPage() {
         placeholder: "Select event",
       },
       {
-        key: "due_date",
-        label: "Due date",
-        type: "date",
+        key: "cost",
+        label: "Cost",
+        type: "number",
+        placeholder: "0",
+        renderDisplay: (value) =>
+          value == null || value === ""
+            ? "—"
+            : formatCurrency(toNumber(value)),
       },
       {
         key: "status",
         label: "Status",
         type: "select",
         options: [...STATUS_OPTIONS],
+        selectClassName: (value) =>
+          isTaskStatus(value) ? STATUS_BADGE_CLASS[value] : undefined,
         renderDisplay: (value) => {
           const status = String(value);
           if (!isTaskStatus(status)) return String(value);
@@ -229,28 +266,6 @@ export default function TasksPage() {
           );
         },
       },
-      {
-        key: "priority",
-        label: "Priority",
-        type: "select",
-        options: [...PRIORITY_OPTIONS],
-        renderDisplay: (value) => {
-          const priority = String(value);
-          if (!isTaskPriority(priority)) return String(value);
-          return (
-            <Badge className={PRIORITY_BADGE_CLASS[priority]}>
-              {PRIORITY_LABEL[priority]}
-            </Badge>
-          );
-        },
-      },
-      {
-        key: "notes",
-        label: "Notes",
-        type: "textarea",
-        placeholder: "Notes",
-        className: "min-w-[12rem]",
-      },
     ],
     [eventOptions]
   );
@@ -259,7 +274,10 @@ export default function TasksPage() {
     try {
       const { error } = await getSupabase()
         .from("tasks")
-        .insert({ title: "New task" })
+        .insert({
+          title: "New task",
+          category: "wedding_preparation",
+        })
         .select()
         .single();
 
@@ -282,11 +300,18 @@ export default function TasksPage() {
     columnKey: string,
     newValue: EditableCellValue
   ) {
+    const nextValue =
+      columnKey === "cost"
+        ? newValue == null || newValue === ""
+          ? null
+          : toNumber(newValue)
+        : newValue;
+
     try {
       const { error } = await getSupabase()
         .from("tasks")
         .update({
-          [columnKey]: newValue,
+          [columnKey]: nextValue,
         } as Database["public"]["Tables"]["tasks"]["Update"])
         .eq("id", rowId);
 
@@ -298,7 +323,7 @@ export default function TasksPage() {
 
       setTasks((current) =>
         current.map((task) =>
-          task.id === rowId ? { ...task, [columnKey]: newValue } : task
+          task.id === rowId ? { ...task, [columnKey]: nextValue } : task
         )
       );
       toast.success("Saved.");
@@ -332,10 +357,10 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <div className="space-y-4">
         <div>
-          <h1 className="font-heading text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
             Tasks & Responsibilities
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -343,11 +368,28 @@ export default function TasksPage() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <div className="w-full space-y-1.5 sm:w-44">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="filter-category">Category</Label>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger id="filter-category" className="h-11 sm:h-10">
+                <SelectValue placeholder="All categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_FILTER}>All categories</SelectItem>
+                {CATEGORY_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
             <Label htmlFor="filter-assigned">Assigned to</Label>
             <Select value={assignedFilter} onValueChange={setAssignedFilter}>
-              <SelectTrigger id="filter-assigned">
+              <SelectTrigger id="filter-assigned" className="h-11 sm:h-10">
                 <SelectValue placeholder="All people" />
               </SelectTrigger>
               <SelectContent>
@@ -361,10 +403,10 @@ export default function TasksPage() {
             </Select>
           </div>
 
-          <div className="w-full space-y-1.5 sm:w-44">
+          <div className="space-y-1.5">
             <Label htmlFor="filter-status">Status</Label>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger id="filter-status">
+              <SelectTrigger id="filter-status" className="h-11 sm:h-10">
                 <SelectValue placeholder="All statuses" />
               </SelectTrigger>
               <SelectContent>
@@ -378,10 +420,10 @@ export default function TasksPage() {
             </Select>
           </div>
 
-          <div className="w-full space-y-1.5 sm:w-44">
+          <div className="space-y-1.5">
             <Label htmlFor="filter-event">Event</Label>
             <Select value={eventFilter} onValueChange={setEventFilter}>
-              <SelectTrigger id="filter-event">
+              <SelectTrigger id="filter-event" className="h-11 sm:h-10">
                 <SelectValue placeholder="All events" />
               </SelectTrigger>
               <SelectContent>
@@ -403,6 +445,7 @@ export default function TasksPage() {
         isLoading={isLoading}
         emptyMessage="No tasks yet. Add one to get started."
         addLabel="Add task"
+        collapsibleMobile
         onAdd={handleAdd}
         onUpdate={handleUpdate}
         onDelete={handleDelete}
