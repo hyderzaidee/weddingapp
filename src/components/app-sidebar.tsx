@@ -11,6 +11,8 @@ import {
   LogOut,
   Menu,
   PiggyBank,
+  Sparkles,
+  Users,
   Wallet,
 } from "lucide-react";
 
@@ -29,6 +31,8 @@ const navItems = [
   { href: "/money", label: "Money", icon: Wallet },
   { href: "/budget", label: "Budget", icon: PiggyBank },
   { href: "/events", label: "Events", icon: CalendarDays },
+  { href: "/guests", label: "Guests", icon: Users },
+  { href: "/vision-board", label: "Vision Board", icon: Sparkles },
 ] as const;
 
 function isActivePath(pathname: string, href: string) {
