@@ -231,18 +231,54 @@ export default function EventsPage() {
         </p>
       </div>
 
-      <Card className="wedding-panel shadow-none">
-        <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Total guests across events
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-          <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-            {isLoading ? "…" : totalGuestsAcrossEvents}
-          </p>
-        </CardContent>
-      </Card>
+      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+        {isLoading ? (
+          <Card className="wedding-panel shadow-none sm:col-span-2 lg:col-span-3">
+            <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Guests
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+              <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                …
+              </p>
+            </CardContent>
+          </Card>
+        ) : events.length === 0 ? null : (
+          <>
+            {events.map((event) => (
+              <Card key={event.id} className="wedding-panel shadow-none">
+                <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {event.event_name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                  <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                    {event.guests_total}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {event.guests_total === 1 ? "guest" : "guests"}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+            <Card className="wedding-panel shadow-none">
+              <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total guests across events
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                  {totalGuestsAcrossEvents}
+                </p>
+              </CardContent>
+            </Card>
+          </>
+        )}
+      </div>
 
       <EditableTable
         columns={eventColumns}
