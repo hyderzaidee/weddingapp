@@ -96,6 +96,39 @@ export type Gift = {
   updated_at: string;
 };
 
+export type Guest = {
+  id: string;
+  event_id: string;
+  name: string;
+  member_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type VisionBoardId = "dholki" | "mayon" | "barat" | "valima";
+export type VisionBoardItemType = "note" | "image" | "link";
+export type VisionBoardNoteColor =
+  | "gold"
+  | "blush"
+  | "mint"
+  | "cream"
+  | "lilac";
+
+export type VisionBoardItem = {
+  id: string;
+  board: VisionBoardId;
+  item_type: VisionBoardItemType;
+  title: string | null;
+  content: string | null;
+  image_url: string | null;
+  note_color: VisionBoardNoteColor;
+  pos_x: number;
+  pos_y: number;
+  z_index: number;
+  created_at: string;
+  updated_at: string;
+};
+
 type Tables = {
   tasks: {
     Row: Task;
@@ -274,6 +307,58 @@ type Tables = {
       event_name?: string | null;
       status?: GiftStatus;
       cost?: number | null;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Relationships: [];
+  };
+  guests: {
+    Row: Guest;
+    Insert: {
+      id?: string;
+      event_id: string;
+      name: string;
+      member_count?: number;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Update: {
+      id?: string;
+      event_id?: string;
+      name?: string;
+      member_count?: number;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Relationships: [];
+  };
+  vision_board_items: {
+    Row: VisionBoardItem;
+    Insert: {
+      id?: string;
+      board: VisionBoardId;
+      item_type: VisionBoardItemType;
+      title?: string | null;
+      content?: string | null;
+      image_url?: string | null;
+      note_color?: VisionBoardNoteColor;
+      pos_x?: number;
+      pos_y?: number;
+      z_index?: number;
+      created_at?: string;
+      updated_at?: string;
+    };
+    Update: {
+      id?: string;
+      board?: VisionBoardId;
+      item_type?: VisionBoardItemType;
+      title?: string | null;
+      content?: string | null;
+      image_url?: string | null;
+      note_color?: VisionBoardNoteColor;
+      pos_x?: number;
+      pos_y?: number;
+      z_index?: number;
       created_at?: string;
       updated_at?: string;
     };

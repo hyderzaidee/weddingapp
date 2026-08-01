@@ -8,39 +8,69 @@ import {
   type EditableCellValue,
   type EditableColumn,
 } from "@/components/editable-table";
-import { toNumber } from "@/lib/currency";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ensureDefaultEvents } from "@/lib/event-options";
 import { normalizeImageUrls } from "@/lib/storage";
 import { getSupabase } from "@/lib/supabase";
-import type { Database, Event } from "@/types/database";
+import type { Database, Event, Guest } from "@/types/database";
 
-function toEvent(row: Event): Event {
+type EventWithGuestTotal = Event & { guests_total: number };
+
+function toEvent(row: Event, guestsTotal = 0): EventWithGuestTotal {
   return {
     ...row,
     image_urls: normalizeImageUrls(row.image_urls),
+    guests_total: guestsTotal,
   };
 }
 
 export default function EventsPage() {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<EventWithGuestTotal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadEvents = useCallback(async () => {
     try {
       await ensureDefaultEvents();
-      const { data, error } = await getSupabase()
-        .from("events")
-        .select("*")
-        .order("event_date", { ascending: true, nullsFirst: false })
-        .order("created_at", { ascending: true });
 
-      if (error) {
-        toast.error(error.message || "Failed to load events.");
+      const [eventsResult, guestsResult] = await Promise.all([
+        getSupabase()
+          .from("events")
+          .select("*")
+          .order("event_date", { ascending: true, nullsFirst: false })
+          .order("created_at", { ascending: true }),
+        getSupabase().from("guests").select("event_id, member_count"),
+      ]);
+
+      if (eventsResult.error) {
+        toast.error(eventsResult.error.message || "Failed to load events.");
         setEvents([]);
         return;
       }
 
-      setEvents((data ?? []).map(toEvent));
+      if (guestsResult.error) {
+        toast.error(
+          guestsResult.error.message || "Failed to load guest totals."
+        );
+        setEvents([]);
+        return;
+      }
+
+      const totals = new Map<string, number>();
+      for (const row of (guestsResult.data ?? []) as Pick<
+        Guest,
+        "event_id" | "member_count"
+      >[]) {
+        totals.set(
+          row.event_id,
+          (totals.get(row.event_id) ?? 0) + Number(row.member_count ?? 0)
+        );
+      }
+
+      setEvents(
+        (eventsResult.data ?? []).map((event) =>
+          toEvent(event, totals.get(event.id) ?? 0)
+        )
+      );
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to load events."
@@ -65,6 +95,11 @@ export default function EventsPage() {
     };
   }, [loadEvents]);
 
+  const totalGuestsAcrossEvents = useMemo(
+    () => events.reduce((sum, event) => sum + event.guests_total, 0),
+    [events]
+  );
+
   const eventColumns: EditableColumn[] = useMemo(
     () => [
       {
@@ -87,10 +122,13 @@ export default function EventsPage() {
         className: "min-w-[10rem]",
       },
       {
-        key: "guest_count",
+        key: "guests_total",
         label: "Guests",
         type: "number",
-        placeholder: "0",
+        editable: false,
+        renderDisplay: (value) => (
+          <span className="tabular-nums">{Number(value ?? 0)}</span>
+        ),
       },
       {
         key: "notes",
@@ -130,18 +168,13 @@ export default function EventsPage() {
     columnKey: string,
     newValue: EditableCellValue
   ) {
-    const nextValue =
-      columnKey === "guest_count"
-        ? newValue == null || newValue === ""
-          ? null
-          : toNumber(newValue)
-        : newValue;
+    if (columnKey === "guests_total") return;
 
     try {
       const { error } = await getSupabase()
         .from("events")
         .update({
-          [columnKey]: nextValue,
+          [columnKey]: newValue,
         } as Database["public"]["Tables"]["events"]["Update"])
         .eq("id", rowId);
 
@@ -153,7 +186,7 @@ export default function EventsPage() {
 
       setEvents((current) =>
         current.map((row) =>
-          row.id === rowId ? { ...row, [columnKey]: nextValue } : row
+          row.id === rowId ? { ...row, [columnKey]: newValue } : row
         )
       );
       toast.success("Saved.");
@@ -194,8 +227,22 @@ export default function EventsPage() {
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Event details used across Tasks and the rest of wedding planning.
+          Guest totals come from each event’s guest list.
         </p>
       </div>
+
+      <Card className="wedding-panel shadow-none">
+        <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Total guests across events
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+          <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            {isLoading ? "…" : totalGuestsAcrossEvents}
+          </p>
+        </CardContent>
+      </Card>
 
       <EditableTable
         columns={eventColumns}

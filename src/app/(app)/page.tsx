@@ -7,6 +7,8 @@ import {
   CalendarDays,
   CheckSquare,
   PiggyBank,
+  Sparkles,
+  Users,
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -40,6 +42,18 @@ const modules = [
     label: "Events",
     description: "Celebration dates, venues, and guests",
     icon: CalendarDays,
+  },
+  {
+    href: "/guests",
+    label: "Guests",
+    description: "Guest lists and headcount per event",
+    icon: Users,
+  },
+  {
+    href: "/vision-board",
+    label: "Vision Board",
+    description: "Pics, links, and sticky notes by event",
+    icon: Sparkles,
   },
 ] as const;
 
