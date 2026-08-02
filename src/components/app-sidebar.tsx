@@ -105,19 +105,33 @@ function NavLinks({
 }
 
 function SidebarFooter({ onNavigate }: { onNavigate?: () => void }) {
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    onNavigate?.();
+    try {
+      await fetch("/api/logout", { method: "POST", redirect: "manual" });
+    } catch {
+      // Still leave the session UI even if the request fails.
+    } finally {
+      window.location.href = "/login";
+    }
+  }
+
   return (
     <div className="mt-auto space-y-3 px-1 pb-[env(safe-area-inset-bottom)]">
-      <form action="/api/logout" method="POST">
-        <Button
-          type="submit"
-          variant="ghost"
-          className="h-11 w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
-          onClick={onNavigate}
-        >
-          <LogOut className="size-4" />
-          Log out
-        </Button>
-      </form>
+      <Button
+        type="button"
+        variant="ghost"
+        className="h-11 w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
+        disabled={isLoggingOut}
+        onClick={() => void handleLogout()}
+      >
+        <LogOut className="size-4" />
+        Log out
+      </Button>
       <p className="px-2 text-xs leading-relaxed text-muted-foreground/80">
         Shadi ki tayari — sab kuch ek jagah.
       </p>

@@ -15,11 +15,29 @@ function sanitizeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80);
 }
 
+function createUploadId(): string {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
+
+  return `img-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function isAllowedImage(file: File) {
+  if (!file.type) {
+    return /\.(jpe?g|png|gif|webp|heic|heif)$/i.test(file.name);
+  }
+  return ALLOWED_TYPES.has(file.type) || file.type.startsWith("image/");
+}
+
 export async function uploadInspirationImage(
   file: File,
   folder: string
 ): Promise<string> {
-  if (!ALLOWED_TYPES.has(file.type) && !file.type.startsWith("image/")) {
+  if (!isAllowedImage(file)) {
     throw new Error("Please choose an image file.");
   }
 
@@ -28,7 +46,7 @@ export async function uploadInspirationImage(
   }
 
   const supabase = getSupabase();
-  const path = `${folder}/${crypto.randomUUID()}-${sanitizeFileName(file.name)}`;
+  const path = `${folder}/${createUploadId()}-${sanitizeFileName(file.name)}`;
 
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
     cacheControl: "3600",

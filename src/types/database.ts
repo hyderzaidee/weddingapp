@@ -125,6 +125,7 @@ export type VisionBoardItem = {
   pos_x: number;
   pos_y: number;
   z_index: number;
+  scale: number;
   created_at: string;
   updated_at: string;
 };
@@ -345,6 +346,7 @@ type Tables = {
       pos_x?: number;
       pos_y?: number;
       z_index?: number;
+      scale?: number;
       created_at?: string;
       updated_at?: string;
     };
@@ -359,6 +361,7 @@ type Tables = {
       pos_x?: number;
       pos_y?: number;
       z_index?: number;
+      scale?: number;
       created_at?: string;
       updated_at?: string;
     };

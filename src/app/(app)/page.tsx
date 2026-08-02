@@ -52,7 +52,7 @@ const modules = [
   {
     href: "/vision-board",
     label: "Vision Board",
-    description: "Pics, links, and sticky notes by event",
+    description: "Pics, links, and comments by event",
     icon: Sparkles,
   },
 ] as const;
