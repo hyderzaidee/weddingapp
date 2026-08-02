@@ -15,6 +15,7 @@ import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, toNumber } from "@/lib/currency";
+import { formatEventDate } from "@/lib/dates";
 import { getSupabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
@@ -75,14 +76,6 @@ function daysUntil(dateStr: string): number {
   const [year, month, day] = dateStr.split("-").map(Number);
   const targetUtc = Date.UTC(year, month - 1, day);
   return Math.round((targetUtc - todayUtc) / 86_400_000);
-}
-
-function formatEventDate(dateStr: string): string {
-  return new Date(`${dateStr}T00:00:00`).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 export default function HomePage() {
@@ -183,8 +176,8 @@ export default function HomePage() {
       : null;
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <div>
+    <div className="space-y-5 sm:space-y-8">
+      <div className="hidden md:block">
         <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-3xl">
           Shaadi dashboard
         </h1>
@@ -193,79 +186,81 @@ export default function HomePage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
-        <Card className="wedding-panel shadow-none">
-          <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <CheckSquare className="size-4 text-maroon" />
-              Tasks done
+      <div className="-mx-3 flex gap-2.5 overflow-x-auto px-3 pb-1 snap-x snap-mandatory sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-3 sm:overflow-visible sm:px-0 sm:pb-0">
+        <Card className="wedding-panel min-w-[9.5rem] shrink-0 snap-start shadow-none sm:min-w-0">
+          <CardHeader className="p-3 pb-1.5 sm:p-6 sm:pb-2">
+            <CardTitle className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground sm:gap-2 sm:text-sm">
+              <CheckSquare className="size-3.5 text-maroon sm:size-4" />
+              Tasks
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
             {isLoading ? (
-              <div className="h-8 w-24 animate-pulse rounded bg-muted" />
+              <div className="h-7 w-16 animate-pulse rounded bg-muted" />
             ) : (
               <>
-                <p className="text-2xl font-semibold tracking-tight text-foreground">
+                <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
                   {stats?.tasksDone ?? 0}
-                  <span className="text-base font-normal text-muted-foreground/80">
+                  <span className="text-sm font-normal text-muted-foreground/80 sm:text-base">
                     {" "}
                     / {stats?.tasksTotal ?? 0}
                   </span>
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">completed</p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground sm:mt-1 sm:text-xs">
+                  completed
+                </p>
               </>
             )}
           </CardContent>
         </Card>
 
-        <Card className="wedding-panel shadow-none">
-          <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <PiggyBank className="size-4 text-maroon" />
-              Budget spent
+        <Card className="wedding-panel min-w-[9.5rem] shrink-0 snap-start shadow-none sm:min-w-0">
+          <CardHeader className="p-3 pb-1.5 sm:p-6 sm:pb-2">
+            <CardTitle className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground sm:gap-2 sm:text-sm">
+              <PiggyBank className="size-3.5 text-maroon sm:size-4" />
+              Spent
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
             {isLoading ? (
-              <div className="h-8 w-32 animate-pulse rounded bg-muted" />
+              <div className="h-7 w-20 animate-pulse rounded bg-muted" />
             ) : (
               <>
-                <p className="text-2xl font-semibold tracking-tight text-foreground">
+                <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
                   {formatCurrency(stats?.budgetActual ?? 0)}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  of {formatCurrency(stats?.budgetEstimated ?? 0)} contributed
+                <p className="mt-0.5 truncate text-[11px] text-muted-foreground sm:mt-1 sm:text-xs">
+                  of {formatCurrency(stats?.budgetEstimated ?? 0)}
                 </p>
               </>
             )}
           </CardContent>
         </Card>
 
-        <Card className="wedding-panel shadow-none">
-          <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <CalendarDays className="size-4 text-maroon" />
-              Days remaining
+        <Card className="wedding-panel min-w-[9.5rem] shrink-0 snap-start shadow-none sm:min-w-0">
+          <CardHeader className="p-3 pb-1.5 sm:p-6 sm:pb-2">
+            <CardTitle className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground sm:gap-2 sm:text-sm">
+              <CalendarDays className="size-3.5 text-maroon sm:size-4" />
+              Days left
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
             {isLoading ? (
-              <div className="h-8 w-20 animate-pulse rounded bg-muted" />
+              <div className="h-7 w-14 animate-pulse rounded bg-muted" />
             ) : daysRemaining == null ? (
               <>
-                <p className="text-2xl font-semibold tracking-tight text-foreground">
+                <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
                   —
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Add an event date to start the countdown
+                <p className="mt-0.5 text-[11px] text-muted-foreground sm:mt-1 sm:text-xs">
+                  Add an event date
                 </p>
               </>
             ) : (
               <>
                 <p
                   className={cn(
-                    "text-2xl font-semibold tracking-tight",
+                    "text-xl font-semibold tracking-tight sm:text-2xl",
                     daysRemaining < 0 ? "text-muted-foreground" : "text-foreground"
                   )}
                 >
@@ -275,11 +270,11 @@ export default function HomePage() {
                       ? "Today"
                       : daysRemaining}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-0.5 truncate text-[11px] text-muted-foreground sm:mt-1 sm:text-xs">
                   {daysRemaining > 0
                     ? `until ${formatEventDate(stats!.earliestEventDate!)}`
                     : daysRemaining === 0
-                      ? "Earliest event is today"
+                      ? "Event is today"
                       : `since ${formatEventDate(stats!.earliestEventDate!)}`}
                 </p>
               </>
@@ -289,17 +284,17 @@ export default function HomePage() {
       </div>
 
       <section className="space-y-3">
-        <h2 className="font-heading text-lg font-semibold tracking-tight text-foreground">
+        <h2 className="font-heading text-base font-semibold tracking-tight text-foreground sm:text-lg">
           Jump in
         </h2>
-        <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
+        <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
           {modules.map(({ href, label, description, icon: Icon }) => (
             <Link
               key={href}
               href={href}
-              className="group flex min-h-16 items-start gap-3 rounded-2xl border border-border/80 bg-card/85 p-3.5 transition-colors active:bg-card hover:border-gold/50 hover:bg-card sm:p-4"
+              className="group flex min-h-14 items-center gap-3 rounded-2xl border border-border/80 bg-card/85 p-3.5 transition-colors active:bg-card hover:border-gold/50 hover:bg-card sm:min-h-16 sm:items-start sm:p-4"
             >
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-maroon transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent text-maroon transition-colors group-hover:bg-primary group-hover:text-primary-foreground sm:size-10">
                 <Icon className="size-4" />
               </span>
               <span className="min-w-0 flex-1">

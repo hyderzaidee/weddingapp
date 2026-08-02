@@ -5,22 +5,13 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
+import { formatEventDate } from "@/lib/dates";
 import { ensureDefaultEvents } from "@/lib/event-options";
 import { getSupabase } from "@/lib/supabase";
 import type { Event, Guest } from "@/types/database";
 
 type EventWithTotal = Event & { memberTotal: number };
-
-function formatEventDate(value: string | null) {
-  if (!value) return "Date TBD";
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 export default function GuestsPage() {
   const [events, setEvents] = useState<EventWithTotal[]>([]);
@@ -93,8 +84,8 @@ export default function GuestsPage() {
   }, [loadEvents]);
 
   return (
-    <div className="space-y-5 sm:space-y-6">
-      <div>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="hidden md:block">
         <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
           Guests
         </h1>
@@ -106,30 +97,32 @@ export default function GuestsPage() {
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading events…</p>
       ) : events.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No events yet. Add one under Events first.
-        </p>
+        <div className="rounded-2xl border border-dashed border-border bg-card/60 px-4 py-10 text-center">
+          <p className="text-sm text-muted-foreground">
+            No events yet. Add one under Events first.
+          </p>
+          <Button type="button" className="mt-4" asChild>
+            <Link href="/events">Go to Events</Link>
+          </Button>
+        </div>
       ) : (
-        <ul className="space-y-2.5">
+        <ul className="space-y-2">
           {events.map((event) => (
             <li key={event.id}>
               <Link
                 href={`/guests/${event.id}`}
-                className="wedding-panel flex items-center justify-between gap-3 rounded-2xl px-4 py-3.5 transition-colors hover:bg-muted/40 sm:px-5"
+                className="wedding-panel flex min-h-16 items-center justify-between gap-3 rounded-2xl px-4 py-3.5 transition-colors active:bg-muted/50 hover:bg-muted/40 sm:px-5"
               >
                 <div className="min-w-0">
                   <p className="truncate font-medium text-foreground">
-                    {event.event_name}{" "}
-                    <span className="tabular-nums text-muted-foreground">
-                      ({event.memberTotal}{" "}
-                      {event.memberTotal === 1 ? "guest" : "guests"})
-                    </span>
+                    {event.event_name}
                   </p>
                   <p className="mt-0.5 text-sm text-muted-foreground">
-                    {formatEventDate(event.event_date)}
+                    {formatEventDate(event.event_date)} · {event.memberTotal}{" "}
+                    {event.memberTotal === 1 ? "guest" : "guests"}
                   </p>
                 </div>
-                <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+                <ArrowRight className="size-5 shrink-0 text-muted-foreground" />
               </Link>
             </li>
           ))}

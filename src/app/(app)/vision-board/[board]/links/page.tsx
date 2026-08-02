@@ -215,26 +215,26 @@ export default function VisionBoardLinksPage() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-5">
+    <div className="space-y-3 sm:space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0 flex-1">
           <Link
             href="/vision-board"
-            className="mb-2 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="mb-2 hidden items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground md:inline-flex"
           >
             <ArrowLeft className="size-3.5" />
             All boards
           </Link>
-          <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+          <h1 className="hidden font-heading text-xl font-semibold tracking-tight text-foreground md:block md:text-2xl">
             {boardMeta.label} links
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 hidden text-sm text-muted-foreground md:block">
             Links sit in fixed 4-across slots. The board grows as you add more.
           </p>
           <VisionBoardTabs boardId={board} active="links" />
         </div>
 
-        <Button type="button" onClick={() => setLinkOpen(true)}>
+        <Button type="button" className="w-full sm:w-auto" onClick={() => setLinkOpen(true)}>
           <Link2 className="size-4" />
           Add link
         </Button>

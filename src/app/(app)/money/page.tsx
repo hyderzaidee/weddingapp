@@ -198,8 +198,8 @@ export default function MoneyPage() {
   }
 
   return (
-    <div className="space-y-5 sm:space-y-6">
-      <div>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="hidden md:block">
         <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
           Money
         </h1>
@@ -210,35 +210,35 @@ export default function MoneyPage() {
 
       <div className="grid gap-2.5 lg:grid-cols-[minmax(0,18rem)_1fr] lg:gap-3">
         <Card className="wedding-panel shadow-none">
-          <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total money collected
+          <CardHeader className="p-3 pb-1.5 sm:p-6 sm:pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">
+              Total collected
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-            <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+            <p className="text-2xl font-semibold tracking-tight text-foreground">
               {formatCurrency(totalSpent)}
             </p>
           </CardContent>
         </Card>
 
         <Card className="wedding-panel shadow-none">
-          <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="p-3 pb-1.5 sm:p-6 sm:pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">
               Who contributed
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
             {paidByBreakdown.length === 0 ? (
               <p className="text-sm text-muted-foreground/80">
                 No money collected yet.
               </p>
             ) : (
-              <ul className="grid grid-cols-1 gap-2 text-sm text-foreground/90 sm:flex sm:flex-wrap sm:gap-x-4 sm:gap-y-2">
+              <ul className="grid grid-cols-1 gap-1.5 text-sm text-foreground/90 sm:flex sm:flex-wrap sm:gap-x-4 sm:gap-y-2">
                 {paidByBreakdown.map(({ name, amount }) => (
                   <li
                     key={name}
-                    className="flex items-center justify-between gap-3 rounded-xl bg-muted/50 px-3 py-2.5 sm:bg-transparent sm:px-0 sm:py-0"
+                    className="flex min-h-11 items-center justify-between gap-3 rounded-xl bg-muted/50 px-3 py-2 sm:min-h-0 sm:bg-transparent sm:px-0 sm:py-0"
                   >
                     <span className="font-medium text-foreground">{name}</span>
                     <span className="tabular-nums">
