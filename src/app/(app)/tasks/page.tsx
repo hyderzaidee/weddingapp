@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ListFilter } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -9,6 +10,7 @@ import {
   type EditableColumn,
 } from "@/components/editable-table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -17,6 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { formatCurrency, toNumber } from "@/lib/currency";
 import { getSupabase } from "@/lib/supabase";
 import {
@@ -93,6 +101,7 @@ export default function TasksPage() {
   const [statusFilter, setStatusFilter] = useState(ALL_FILTER);
   const [eventFilter, setEventFilter] = useState(ALL_FILTER);
   const [categoryFilter, setCategoryFilter] = useState(ALL_FILTER);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const loadEventNames = useCallback(async () => {
     try {
@@ -356,88 +365,137 @@ export default function TasksPage() {
     }
   }
 
+  const activeFilterCount = [
+    categoryFilter !== ALL_FILTER,
+    assignedFilter !== ALL_FILTER,
+    statusFilter !== ALL_FILTER,
+    eventFilter !== ALL_FILTER,
+  ].filter(Boolean).length;
+
+  function renderFilters(idPrefix: string) {
+    return (
+      <>
+        <div className="space-y-1.5">
+          <Label htmlFor={`${idPrefix}-category`}>Category</Label>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger id={`${idPrefix}-category`}>
+              <SelectValue placeholder="All categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_FILTER}>All categories</SelectItem>
+              {CATEGORY_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor={`${idPrefix}-assigned`}>Assigned to</Label>
+          <Select value={assignedFilter} onValueChange={setAssignedFilter}>
+            <SelectTrigger id={`${idPrefix}-assigned`}>
+              <SelectValue placeholder="All people" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_FILTER}>All people</SelectItem>
+              {assigneeOptions.map((name) => (
+                <SelectItem key={name} value={name}>
+                  {name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor={`${idPrefix}-status`}>Status</Label>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger id={`${idPrefix}-status`}>
+              <SelectValue placeholder="All statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_FILTER}>All statuses</SelectItem>
+              {STATUS_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor={`${idPrefix}-event`}>Event</Label>
+          <Select value={eventFilter} onValueChange={setEventFilter}>
+            <SelectTrigger id={`${idPrefix}-event`}>
+              <SelectValue placeholder="All events" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_FILTER}>All events</SelectItem>
+              {eventOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </>
+    );
+  }
+
   return (
-    <div className="space-y-5 sm:space-y-6">
-      <div className="space-y-4">
-        <div>
-          <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="hidden font-heading text-xl font-semibold tracking-tight text-foreground md:block md:text-2xl">
             Tasks & Responsibilities
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {completedCount} of {filteredTasks.length} tasks completed
+          <p className="text-sm text-muted-foreground md:mt-1">
+            {completedCount} of {filteredTasks.length} completed
           </p>
         </div>
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="filter-category">Category</Label>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger id="filter-category" className="h-11 sm:h-10">
-                <SelectValue placeholder="All categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_FILTER}>All categories</SelectItem>
-                {CATEGORY_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="filter-assigned">Assigned to</Label>
-            <Select value={assignedFilter} onValueChange={setAssignedFilter}>
-              <SelectTrigger id="filter-assigned" className="h-11 sm:h-10">
-                <SelectValue placeholder="All people" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_FILTER}>All people</SelectItem>
-                {assigneeOptions.map((name) => (
-                  <SelectItem key={name} value={name}>
-                    {name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="filter-status">Status</Label>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger id="filter-status" className="h-11 sm:h-10">
-                <SelectValue placeholder="All statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_FILTER}>All statuses</SelectItem>
-                {STATUS_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="filter-event">Event</Label>
-            <Select value={eventFilter} onValueChange={setEventFilter}>
-              <SelectTrigger id="filter-event" className="h-11 sm:h-10">
-                <SelectValue placeholder="All events" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_FILTER}>All events</SelectItem>
-                {eventOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="relative shrink-0 gap-2 md:hidden"
+          onClick={() => setFiltersOpen(true)}
+        >
+          <ListFilter className="size-4" />
+          Filters
+          {activeFilterCount > 0 ? (
+            <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
+              {activeFilterCount}
+            </span>
+          ) : null}
+        </Button>
       </div>
+
+      <div className="hidden gap-3 md:grid md:grid-cols-2 lg:grid-cols-4">
+        {renderFilters("desk")}
+      </div>
+
+      <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <SheetContent
+          side="bottom"
+          className="rounded-t-3xl px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 md:hidden"
+        >
+          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border" />
+          <SheetHeader className="mb-3 text-left">
+            <SheetTitle>Filters</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4">{renderFilters("mobile")}</div>
+          <Button
+            type="button"
+            className="mt-5 w-full"
+            onClick={() => setFiltersOpen(false)}
+          >
+            Done
+          </Button>
+        </SheetContent>
+      </Sheet>
 
       <EditableTable
         columns={columns}
@@ -445,7 +503,6 @@ export default function TasksPage() {
         isLoading={isLoading}
         emptyMessage="No tasks yet. Add one to get started."
         addLabel="Add task"
-        collapsibleMobile
         onAdd={handleAdd}
         onUpdate={handleUpdate}
         onDelete={handleDelete}

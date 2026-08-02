@@ -5,13 +5,13 @@ import { ChevronDown, LoaderCircle, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -29,6 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { formatEventDateLong } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 export type EditableColumnType =
@@ -112,17 +113,7 @@ function parseCellValue(
 }
 
 function formatDateDisplay(value: string): string {
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
-  if (!match) return value;
-
-  const date = new Date(`${match[1]}-${match[2]}-${match[3]}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
-
-  return date.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  return formatEventDateLong(value);
 }
 
 function displayValue(
@@ -192,7 +183,7 @@ export function EditableTable({
   emptyMessage = "No rows yet. Add one to get started.",
   addLabel = "Add row",
   className,
-  collapsibleMobile = false,
+  collapsibleMobile = true,
 }: EditableTableProps) {
   const [editing, setEditing] = useState<EditingCell | null>(null);
   const [draft, setDraft] = useState("");
@@ -374,7 +365,7 @@ export function EditableTable({
         variant="outline"
         onClick={handleAdd}
         disabled={isLoading || isAdding}
-        className="sticky bottom-3 z-20 h-11 w-full gap-2 border-border/80 bg-card/95 shadow-md backdrop-blur-sm md:static md:w-auto md:shadow-none"
+        className="hidden gap-2 md:inline-flex"
       >
         {isAdding ? (
           <LoaderCircle className="size-4 animate-spin" />
@@ -384,33 +375,51 @@ export function EditableTable({
         {addLabel}
       </Button>
 
-      <Dialog
+      <Button
+        type="button"
+        onClick={handleAdd}
+        disabled={isLoading || isAdding}
+        aria-label={addLabel}
+        className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-30 size-14 rounded-full p-0 shadow-lg md:hidden"
+      >
+        {isAdding ? (
+          <LoaderCircle className="size-6 animate-spin" />
+        ) : (
+          <Plus className="size-6" />
+        )}
+      </Button>
+
+      <Sheet
         open={deleteTargetId != null}
         onOpenChange={(open) => {
           if (!open && !isDeleting) setDeleteTargetId(null);
         }}
       >
-        <DialogContent className="max-w-[calc(100%-1.5rem)] rounded-2xl sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Delete this row?</DialogTitle>
-            <DialogDescription>
+        <SheetContent
+          side="bottom"
+          className="rounded-t-3xl px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 md:mx-auto md:max-w-lg"
+        >
+          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border md:hidden" />
+          <SheetHeader className="text-left">
+            <SheetTitle>Delete this row?</SheetTitle>
+            <SheetDescription>
               This can&apos;t be undone. The row will be removed permanently.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
+            </SheetDescription>
+          </SheetHeader>
+          <SheetFooter className="mt-5 gap-2 sm:flex-col">
             <Button
               type="button"
               variant="outline"
-              className="h-11 w-full sm:w-auto"
+              className="w-full"
               onClick={() => setDeleteTargetId(null)}
               disabled={isDeleting}
             >
-              Cancel
+              No
             </Button>
             <Button
               type="button"
               variant="destructive"
-              className="h-11 w-full sm:w-auto"
+              className="w-full"
               onClick={handleConfirmDelete}
               disabled={isDeleting}
             >
@@ -420,12 +429,12 @@ export function EditableTable({
                   Deleting…
                 </>
               ) : (
-                "Delete"
+                "Yes"
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

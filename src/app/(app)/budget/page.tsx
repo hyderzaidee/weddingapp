@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, toNumber } from "@/lib/currency";
+import { formatEventDate } from "@/lib/dates";
 import { getSupabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import type {
@@ -62,15 +63,7 @@ function toTaskExpense(row: Task): Task {
 
 function formatDate(value: string | null) {
   if (!value) return "—";
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
-  if (!match) return value;
-  const date = new Date(`${match[1]}-${match[2]}-${match[3]}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return formatEventDate(value);
 }
 
 export default function BudgetPage() {
@@ -163,8 +156,8 @@ export default function BudgetPage() {
   }, [collections, taskExpenses]);
 
   return (
-    <div className="space-y-5 sm:space-y-6">
-      <div>
+    <div className="space-y-4 pb-20 sm:space-y-6 md:pb-0">
+      <div className="hidden md:block">
         <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
           Budget
         </h1>
@@ -174,7 +167,25 @@ export default function BudgetPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
+      <Card className="wedding-panel shadow-none md:hidden">
+        <CardContent className="space-y-1 p-4">
+          <p className="text-xs font-medium text-muted-foreground">Remaining</p>
+          <p
+            className={cn(
+              "text-3xl font-semibold tracking-tight",
+              totals.remaining < 0 ? "text-red-600" : "text-emerald-600"
+            )}
+          >
+            {formatCurrency(totals.remaining)}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {formatCurrency(totals.totalSpent)} spent of{" "}
+            {formatCurrency(totals.totalBudget)} collected
+          </p>
+        </CardContent>
+      </Card>
+
+      <div className="hidden grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid">
         <Card className="wedding-panel shadow-none">
           <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -226,11 +237,11 @@ export default function BudgetPage() {
             <h2 className="font-heading text-base font-semibold tracking-tight text-foreground sm:text-lg">
               Money collected
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 hidden text-sm text-muted-foreground md:block">
               From the Money screen — cash people put into the wedding pot.
             </p>
           </div>
-          <Button asChild variant="outline" className="h-11 w-full sm:h-10 sm:w-auto">
+          <Button asChild variant="outline" className="hidden w-full sm:w-auto md:inline-flex">
             <Link href="/money">Manage on Money</Link>
           </Button>
         </div>
@@ -343,6 +354,12 @@ export default function BudgetPage() {
           </div>
         )}
       </section>
+
+      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border/80 bg-card/95 px-3 py-2.5 backdrop-blur-md md:hidden">
+        <Button asChild className="w-full">
+          <Link href="/money">Manage money</Link>
+        </Button>
+      </div>
     </div>
   );
 }

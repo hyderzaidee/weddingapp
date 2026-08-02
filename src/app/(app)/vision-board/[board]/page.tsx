@@ -10,11 +10,17 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { VisionBoardPhotoTile } from "@/components/vision-board-photo-tile";
 import { VisionBoardTabs } from "@/components/vision-board-tabs";
@@ -59,7 +65,8 @@ export default function VisionBoardPage() {
   const [isSavingComment, setIsSavingComment] = useState(false);
   const [deleteItem, setDeleteItem] = useState<VisionBoardItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [imageCols, setImageCols] = useState(IMAGE_COLS_COMPACT);
+  // Keep SSR + first client paint aligned; switch to 3-col after mount on small screens.
+  const [imageCols, setImageCols] = useState(IMAGE_COLS);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const board = isVisionBoardId(boardParam) ? boardParam : null;
@@ -319,28 +326,29 @@ export default function VisionBoardPage() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-5">
+    <div className="space-y-3 sm:space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0 flex-1">
           <Link
             href="/vision-board"
-            className="mb-2 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="mb-2 hidden items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground md:inline-flex"
           >
             <ArrowLeft className="size-3.5" />
             All boards
           </Link>
-          <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+          <h1 className="hidden font-heading text-xl font-semibold tracking-tight text-foreground md:block md:text-2xl">
             {boardMeta.label} whiteboard
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 hidden text-sm text-muted-foreground md:block">
             Pin photos and add comments. Open Links for ceremony URLs.
           </p>
           <VisionBoardTabs boardId={board} active="board" />
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           <Button
             type="button"
+            className="w-full sm:w-auto"
             disabled={isUploading}
             onClick={() => fileInputRef.current?.click()}
           >
@@ -351,7 +359,7 @@ export default function VisionBoardPage() {
             )}
             Photo
           </Button>
-          <Button type="button" variant="outline" asChild>
+          <Button type="button" variant="outline" className="w-full sm:w-auto" asChild>
             <Link href={`/vision-board/${board}/links`}>
               <Link2 className="size-4" />
               Link
@@ -432,31 +440,36 @@ export default function VisionBoardPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog
+      <Sheet
         open={Boolean(commentItem)}
         onOpenChange={(open) => {
           if (!open) closeComment();
         }}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Comment</DialogTitle>
-            <DialogDescription>
+        <SheetContent
+          side="bottom"
+          className="rounded-t-3xl px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 md:mx-auto md:max-w-lg"
+        >
+          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border md:hidden" />
+          <SheetHeader className="text-left">
+            <SheetTitle>Comment</SheetTitle>
+            <SheetDescription>
               Add a note for this photo. Leave blank and save to clear it.
-            </DialogDescription>
-          </DialogHeader>
+            </SheetDescription>
+          </SheetHeader>
           <Textarea
             value={commentDraft}
             onChange={(event) => setCommentDraft(event.target.value)}
             placeholder="Write a comment…"
             rows={5}
-            className="mt-2 min-h-28 text-base"
+            className="mt-3 min-h-28 text-base"
             autoFocus
           />
-          <DialogFooter className="mt-4">
+          <SheetFooter className="mt-4 gap-2 sm:flex-col">
             <Button
               type="button"
               variant="outline"
+              className="w-full"
               disabled={isSavingComment}
               onClick={closeComment}
             >
@@ -464,6 +477,7 @@ export default function VisionBoardPage() {
             </Button>
             <Button
               type="button"
+              className="w-full"
               disabled={isSavingComment}
               onClick={() => void handleSaveComment()}
             >
@@ -472,27 +486,32 @@ export default function VisionBoardPage() {
               ) : null}
               Save
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
-      <Dialog
+      <Sheet
         open={Boolean(deleteItem)}
         onOpenChange={(open) => {
           if (!open && !isDeleting) setDeleteItem(null);
         }}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete this photo?</DialogTitle>
-            <DialogDescription>
+        <SheetContent
+          side="bottom"
+          className="rounded-t-3xl px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 md:mx-auto md:max-w-lg"
+        >
+          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border md:hidden" />
+          <SheetHeader className="text-left">
+            <SheetTitle>Delete this photo?</SheetTitle>
+            <SheetDescription>
               This removes the photo from the board. You can’t undo this.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="mt-4">
+            </SheetDescription>
+          </SheetHeader>
+          <SheetFooter className="mt-5 gap-2 sm:flex-col">
             <Button
               type="button"
               variant="outline"
+              className="w-full"
               disabled={isDeleting}
               onClick={() => setDeleteItem(null)}
             >
@@ -501,6 +520,7 @@ export default function VisionBoardPage() {
             <Button
               type="button"
               variant="destructive"
+              className="w-full"
               disabled={isDeleting}
               onClick={() => void handleConfirmDelete()}
             >
@@ -509,9 +529,9 @@ export default function VisionBoardPage() {
               ) : null}
               Yes
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

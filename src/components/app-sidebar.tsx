@@ -2,48 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import {
-  CalendarDays,
-  CheckSquare,
-  Heart,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  PiggyBank,
-  Sparkles,
-  Users,
-  Wallet,
-} from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { ArrowLeft, Heart, LogOut } from "lucide-react";
 
+import { MobileTabBar } from "@/components/mobile-tab-bar";
 import { Button } from "@/components/ui/button";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  ALL_NAV_ITEMS,
+  currentPageLabel,
+  isActivePath,
+} from "@/lib/nav";
 import { cn } from "@/lib/utils";
-
-const navItems = [
-  { href: "/", label: "Home", icon: LayoutDashboard },
-  { href: "/tasks", label: "Tasks", icon: CheckSquare },
-  { href: "/money", label: "Money", icon: Wallet },
-  { href: "/budget", label: "Budget", icon: PiggyBank },
-  { href: "/events", label: "Events", icon: CalendarDays },
-  { href: "/guests", label: "Guests", icon: Users },
-  { href: "/vision-board", label: "Vision Board", icon: Sparkles },
-] as const;
-
-function isActivePath(pathname: string, href: string) {
-  if (href === "/") return pathname === "/";
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-function currentPageLabel(pathname: string) {
-  const match = navItems.find((item) => isActivePath(pathname, item.href));
-  return match?.label ?? "Wedding Prep";
-}
 
 function Brand({ onNavigate }: { onNavigate?: () => void }) {
   return (
@@ -74,7 +43,7 @@ function NavLinks({
 }) {
   return (
     <nav className="flex flex-1 flex-col gap-1.5">
-      {navItems.map(({ href, label, icon: Icon }) => {
+      {ALL_NAV_ITEMS.map(({ href, label, icon: Icon }) => {
         const isActive = isActivePath(pathname, href);
 
         return (
@@ -158,9 +127,48 @@ function SidebarPanel({
   );
 }
 
+function MobileAppBar() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const title = currentPageLabel(pathname);
+  const showBack =
+    pathname.startsWith("/guests/") ||
+    /^\/vision-board\/[^/]+/.test(pathname);
+
+  const backHref = pathname.startsWith("/guests/")
+    ? "/guests"
+    : pathname.includes("/links")
+      ? pathname.replace(/\/links$/, "")
+      : "/vision-board";
+
+  return (
+    <div className="sticky top-0 z-40 flex min-h-12 items-center gap-2 border-b border-border/80 bg-card/90 px-2 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-md md:hidden">
+      {showBack ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-11 shrink-0"
+          aria-label="Go back"
+          onClick={() => router.push(backHref)}
+        >
+          <ArrowLeft className="size-5" />
+        </Button>
+      ) : (
+        <span className="size-2 shrink-0" aria-hidden />
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-center font-heading text-lg font-semibold tracking-tight text-foreground">
+          {title}
+        </p>
+      </div>
+      {showBack ? <span className="size-11 shrink-0" aria-hidden /> : <span className="size-2 shrink-0" aria-hidden />}
+    </div>
+  );
+}
+
 export function AppSidebar() {
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <>
@@ -168,41 +176,8 @@ export function AppSidebar() {
         <SidebarPanel pathname={pathname} />
       </aside>
 
-      <div className="sticky top-0 z-40 flex items-center gap-3 border-b border-border/80 bg-card/80 px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur-md md:hidden">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-11 shrink-0"
-          onClick={() => setMobileOpen(true)}
-          aria-label="Open menu"
-        >
-          <Menu className="size-5" />
-        </Button>
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-heading text-base font-semibold tracking-tight text-foreground">
-            {currentPageLabel(pathname)}
-          </p>
-          <p className="truncate text-[11px] text-muted-foreground">
-            Wedding Prep
-          </p>
-        </div>
-      </div>
-
-      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent
-          side="left"
-          className="w-[min(100%,20rem)] border-border bg-card p-0"
-        >
-          <SheetHeader className="sr-only">
-            <SheetTitle>Navigation</SheetTitle>
-          </SheetHeader>
-          <SidebarPanel
-            pathname={pathname}
-            onNavigate={() => setMobileOpen(false)}
-          />
-        </SheetContent>
-      </Sheet>
+      <MobileAppBar />
+      <MobileTabBar />
     </>
   );
 }

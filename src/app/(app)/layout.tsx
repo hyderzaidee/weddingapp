@@ -13,7 +13,7 @@ export default function AppLayout({
       </div>
       <div className="relative z-10 flex min-h-dvh flex-col md:flex-row">
         <AppSidebar />
-        <main className="min-w-0 flex-1 overflow-x-hidden pb-[env(safe-area-inset-bottom)]">
+        <main className="min-w-0 flex-1 overflow-x-hidden pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-[env(safe-area-inset-bottom)]">
           <div className="mx-auto w-full max-w-5xl px-3 py-4 sm:px-6 sm:py-6 md:px-10 md:py-10">
             {children}
           </div>

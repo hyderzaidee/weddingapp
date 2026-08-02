@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 
 import {
@@ -220,8 +221,8 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="space-y-5 sm:space-y-6">
-      <div>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="hidden md:block">
         <h1 className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
           Events
         </h1>
@@ -231,15 +232,15 @@ export default function EventsPage() {
         </p>
       </div>
 
-      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="-mx-3 flex gap-2.5 overflow-x-auto px-3 pb-1 snap-x snap-mandatory sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-2.5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
         {isLoading ? (
-          <Card className="wedding-panel shadow-none sm:col-span-2 lg:col-span-3">
-            <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+          <Card className="wedding-panel min-w-[8.5rem] shrink-0 snap-start shadow-none sm:col-span-2 sm:min-w-0 lg:col-span-3">
+            <CardHeader className="p-3 pb-1.5 sm:p-6 sm:pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">
                 Guests
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
               <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
                 …
               </p>
@@ -248,31 +249,40 @@ export default function EventsPage() {
         ) : events.length === 0 ? null : (
           <>
             {events.map((event) => (
-              <Card key={event.id} className="wedding-panel shadow-none">
-                <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {event.event_name}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-                  <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-                    {event.guests_total}
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {event.guests_total === 1 ? "guest" : "guests"}
-                  </p>
-                </CardContent>
-              </Card>
+              <Link
+                key={event.id}
+                href={`/guests/${event.id}`}
+                className="min-w-[8.5rem] shrink-0 snap-start sm:min-w-0"
+              >
+                <Card className="wedding-panel h-full shadow-none transition-colors active:bg-muted/40">
+                  <CardHeader className="p-3 pb-1.5 sm:p-6 sm:pb-2">
+                    <CardTitle className="truncate text-xs font-medium text-muted-foreground sm:text-sm">
+                      {event.event_name}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                    <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                      {event.guests_total}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground sm:text-xs">
+                      {event.guests_total === 1 ? "guest" : "guests"}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
-            <Card className="wedding-panel shadow-none">
-              <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total guests across events
+            <Card className="wedding-panel min-w-[8.5rem] shrink-0 snap-start shadow-none sm:min-w-0">
+              <CardHeader className="p-3 pb-1.5 sm:p-6 sm:pb-2">
+                <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">
+                  Total
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
                 <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
                   {totalGuestsAcrossEvents}
+                </p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground sm:text-xs">
+                  across events
                 </p>
               </CardContent>
             </Card>

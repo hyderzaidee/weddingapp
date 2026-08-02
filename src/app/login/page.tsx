@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
 
@@ -10,9 +10,14 @@ import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [passcode, setPasscode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -45,7 +50,10 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-dvh items-end justify-center px-4 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))] sm:pb-16">
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden bg-[#b7aea6]">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 overflow-hidden bg-[#b7aea6]"
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/login-bg.jpg"
@@ -68,37 +76,58 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="passcode" className="text-white drop-shadow-sm">
-              Passcode
-            </Label>
-            <Input
-              id="passcode"
-              name="passcode"
-              type="password"
-              autoComplete="current-password"
-              value={passcode}
-              onChange={(event) => setPasscode(event.target.value)}
-              required
-              autoFocus
-              className="h-11 border-white/50 bg-white/25 text-foreground placeholder:text-foreground/50"
-            />
-          </div>
+        {/* Mount the form only on the client so password managers / iOS
+            autofill cannot inject attributes into SSR HTML before hydrate. */}
+        {mounted ? (
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-4"
+            suppressHydrationWarning
+          >
+            <div className="space-y-2">
+              <Label htmlFor="passcode" className="text-white drop-shadow-sm">
+                Passcode
+              </Label>
+              <Input
+                id="passcode"
+                name="passcode"
+                type="password"
+                autoComplete="current-password"
+                value={passcode}
+                onChange={(event) => setPasscode(event.target.value)}
+                required
+                autoFocus
+                suppressHydrationWarning
+                className="h-12 border-white/50 bg-white/25 text-base text-foreground placeholder:text-foreground/50"
+              />
+            </div>
 
-          {error ? (
-            <p
-              className="rounded-md bg-black/35 px-2 py-1 text-sm text-red-100"
-              role="alert"
+            {error ? (
+              <p
+                className="rounded-md bg-black/35 px-2 py-1 text-sm text-red-100"
+                role="alert"
+              >
+                {error}
+              </p>
+            ) : null}
+
+            <Button
+              type="submit"
+              className="h-12 w-full text-base"
+              disabled={isSubmitting}
             >
-              {error}
-            </p>
-          ) : null}
-
-          <Button type="submit" className="h-11 w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Checking…" : "Continue"}
-          </Button>
-        </form>
+              {isSubmitting ? "Checking…" : "Continue"}
+            </Button>
+          </form>
+        ) : (
+          <div className="space-y-4" aria-hidden>
+            <div className="space-y-2">
+              <div className="h-4 w-20 rounded bg-white/25" />
+              <div className="h-12 w-full rounded-md bg-white/25" />
+            </div>
+            <div className="h-12 w-full rounded-md bg-primary/80" />
+          </div>
+        )}
       </div>
     </div>
   );

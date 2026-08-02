@@ -212,8 +212,8 @@ export default function EventGuestsPage() {
   }
 
   return (
-    <div className="space-y-5 sm:space-y-6">
-      <div>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="hidden md:block">
         <Link
           href="/guests"
           className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -229,7 +229,19 @@ export default function EventGuestsPage() {
         </p>
       </div>
 
-      <Card className="wedding-panel shadow-none">
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/80 bg-card/85 px-4 py-3 md:hidden">
+        <div className="min-w-0">
+          <p className="truncate font-heading text-base font-semibold text-foreground">
+            {event?.event_name ?? "Guest list"}
+          </p>
+          <p className="text-xs text-muted-foreground">Headcount</p>
+        </div>
+        <p className="text-2xl font-semibold tabular-nums text-foreground">
+          {isLoading ? "…" : totalMembers}
+        </p>
+      </div>
+
+      <Card className="wedding-panel hidden shadow-none md:block">
         <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Total guests
