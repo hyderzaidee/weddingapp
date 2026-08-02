@@ -13,8 +13,8 @@ export default function VisionBoardIndexPage() {
           Vision Board
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Shared whiteboards for Dholki, Mayon, Barat, and Valima — pin pics,
-          links, and sticky notes together. Everyone can add and rearrange.
+          Shared whiteboards for Dholki, Mayon, Barat, and Valima — photos with
+          comments on the board, links on their own tab.
         </p>
       </div>
 

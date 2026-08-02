@@ -15,6 +15,8 @@ create table if not exists public.vision_board_items (
   pos_x numeric not null default 40,
   pos_y numeric not null default 40,
   z_index integer not null default 1,
+  scale numeric not null default 1
+    check (scale >= 0.75 and scale <= 3),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint vision_board_items_payload_check check (
@@ -31,6 +33,8 @@ alter table public.vision_board_items
   add column if not exists pos_y numeric not null default 40;
 alter table public.vision_board_items
   add column if not exists z_index integer not null default 1;
+alter table public.vision_board_items
+  add column if not exists scale numeric not null default 1;
 
 create index if not exists vision_board_items_board_idx
   on public.vision_board_items (board, created_at);

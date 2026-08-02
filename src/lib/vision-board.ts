@@ -1,4 +1,4 @@
-import type { VisionBoardId, VisionBoardNoteColor } from "@/types/database";
+import type { VisionBoardId } from "@/types/database";
 
 export const VISION_BOARDS: {
   id: VisionBoardId;
@@ -27,18 +27,6 @@ export const VISION_BOARDS: {
   },
 ];
 
-export const NOTE_COLORS: {
-  id: VisionBoardNoteColor;
-  label: string;
-  className: string;
-}[] = [
-  { id: "gold", label: "Gold", className: "bg-[#F3E2A8] text-[#5C4310]" },
-  { id: "blush", label: "Blush", className: "bg-[#F4C9C5] text-[#6B2E2E]" },
-  { id: "mint", label: "Mint", className: "bg-[#C9E6D5] text-[#24543A]" },
-  { id: "cream", label: "Cream", className: "bg-[#F7F0DE] text-[#4A3B28]" },
-  { id: "lilac", label: "Lilac", className: "bg-[#E0D4EF] text-[#4A3566]" },
-];
-
 export function isVisionBoardId(value: string): value is VisionBoardId {
   return VISION_BOARDS.some((board) => board.id === value);
 }
@@ -47,23 +35,78 @@ export function getVisionBoard(id: VisionBoardId) {
   return VISION_BOARDS.find((board) => board.id === id)!;
 }
 
-export function noteColorClass(color: VisionBoardNoteColor) {
-  return (
-    NOTE_COLORS.find((item) => item.id === color)?.className ??
-    NOTE_COLORS[0].className
+export const BOARD_WIDTH = 1600;
+export const BOARD_HEIGHT_MIN = 1100;
+export const IMAGE_COLS = 4;
+/** Prefer 3-across on phones/tablets so tiles stay readable. */
+export const IMAGE_COLS_COMPACT = 3;
+/** Board pixels — sized so 4 photos fit across the whiteboard. */
+export const IMAGE_TILE_WIDTH = 360;
+export const IMAGE_GAP_X = 28;
+export const IMAGE_GAP_Y = 28;
+export const IMAGE_GRID_PADDING = 36;
+export const LINK_TILE_WIDTH = 360;
+export const LINK_TILE_HEIGHT = 110;
+export const LINK_COLS = 4;
+export const LINK_GAP_X = 28;
+export const LINK_GAP_Y = 24;
+export const LINK_GRID_PADDING = 36;
+
+/** Tile width so `cols` photos fit across the board with padding and gaps. */
+export function imageTileWidth(cols: number = IMAGE_COLS) {
+  if (cols === IMAGE_COLS) return IMAGE_TILE_WIDTH;
+  const gaps = Math.max(0, cols - 1) * IMAGE_GAP_X;
+  return Math.floor(
+    (BOARD_WIDTH - IMAGE_GRID_PADDING * 2 - gaps) / Math.max(1, cols)
   );
 }
 
-export const BOARD_WIDTH = 1600;
-export const BOARD_HEIGHT = 1100;
+export function imageTileHeight(cols: number = IMAGE_COLS) {
+  return Math.round(imageTileWidth(cols) * 0.75) + 20;
+}
 
-export function randomBoardPosition(seed = Date.now()) {
-  const x = 60 + ((seed * 37) % (BOARD_WIDTH - 320));
-  const y = 60 + ((seed * 53) % (BOARD_HEIGHT - 280));
+/** Place photos in a fixed grid on the board. */
+export function imageGridPosition(index: number, cols: number = IMAGE_COLS) {
+  const tileWidth = imageTileWidth(cols);
+  const tileHeight = imageTileHeight(cols);
+  const col = index % cols;
+  const row = Math.floor(index / cols);
   return {
-    pos_x: Math.round(x / 20) * 20,
-    pos_y: Math.round(y / 20) * 20,
+    pos_x: IMAGE_GRID_PADDING + col * (tileWidth + IMAGE_GAP_X),
+    pos_y: IMAGE_GRID_PADDING + row * (tileHeight + IMAGE_GAP_Y),
   };
+}
+
+export function boardHeightForPhotoCount(
+  photoCount: number,
+  cols: number = IMAGE_COLS
+) {
+  const rows = Math.max(1, Math.ceil(Math.max(photoCount, 1) / cols));
+  const tileHeight = imageTileHeight(cols);
+  const photosBottom =
+    IMAGE_GRID_PADDING +
+    rows * (tileHeight + IMAGE_GAP_Y) +
+    IMAGE_GRID_PADDING;
+  return Math.max(BOARD_HEIGHT_MIN, photosBottom + 220);
+}
+
+/** Place links in a fixed 4-across grid (same strategy as photos). */
+export function linkGridPosition(index: number) {
+  const col = index % LINK_COLS;
+  const row = Math.floor(index / LINK_COLS);
+  return {
+    pos_x: LINK_GRID_PADDING + col * (LINK_TILE_WIDTH + LINK_GAP_X),
+    pos_y: LINK_GRID_PADDING + row * (LINK_TILE_HEIGHT + LINK_GAP_Y),
+  };
+}
+
+export function boardHeightForLinkCount(linkCount: number) {
+  const rows = Math.max(1, Math.ceil(Math.max(linkCount, 1) / LINK_COLS));
+  const linksBottom =
+    LINK_GRID_PADDING +
+    rows * (LINK_TILE_HEIGHT + LINK_GAP_Y) +
+    LINK_GRID_PADDING;
+  return Math.max(BOARD_HEIGHT_MIN, linksBottom + 80);
 }
 
 export function normalizeExternalUrl(value: string): string | null {
